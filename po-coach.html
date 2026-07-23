@@ -277,20 +277,13 @@ function storeSet(key, value) { localStorage.setItem(key, JSON.stringify(value))
 //     never opened index.html) ─────────────────────────────────────────────
 let todayContext = { date: '', goals: [], streak: 0 };
 
-async function loadContext() {
+function applyDashboardContext(state) {
   const date = getActiveDateString();
   let goals = [];
   let streak = 0;
-  try {
-    const { data: row, error } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
-    if (error) throw error;
-    const state = row && row.data;
-    if (state) {
-      if (state['goals:' + date]) goals = JSON.parse(state['goals:' + date]);
-      if (state['goal_streak_v1']) streak = JSON.parse(state['goal_streak_v1']).count || 0;
-    }
-  } catch (e) {
-    console.error('Failed to load dashboard context:', e);
+  if (state) {
+    if (state['goals:' + date]) goals = JSON.parse(state['goals:' + date]);
+    if (state['goal_streak_v1']) streak = JSON.parse(state['goal_streak_v1']).count || 0;
   }
   todayContext = { date, goals, streak };
 
@@ -298,6 +291,30 @@ async function loadContext() {
   const done = goals.filter(g => g.done).length;
   document.getElementById('ctxGoals').textContent = `${done}/${goals.length}`;
   document.getElementById('ctxStreak').textContent = streak;
+}
+
+async function loadContext() {
+  try {
+    const { data: row, error } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
+    if (error) throw error;
+    applyDashboardContext(row && row.data);
+  } catch (e) {
+    console.error('Failed to load dashboard context:', e);
+    applyDashboardContext(null);
+  }
+}
+
+// Live-updates the context card whenever the dashboard's own app_state row changes,
+// independent of this page's own sync channel (which only covers coach_chat_history).
+function subscribeDashboardContext() {
+  sb.channel('app_state_dashboard_context')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.dashboard' },
+      (payload) => {
+        const state = payload.new && payload.new.data;
+        if (state) applyDashboardContext(state);
+      })
+    .subscribe();
 }
 
 function buildSystemPrompt() {
@@ -564,6 +581,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // ─── INIT ────────────────────────────────────────────────────────────────────
 (async () => {
   await loadContext();
+  subscribeDashboardContext();
   await pullAndApply();
   subscribeRealtime();
   messages = storeGet('coach_chat_history') || [];
