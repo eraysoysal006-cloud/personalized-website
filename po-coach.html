@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coach</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --text-primary: #FAFAFA;
+    --text-secondary: #B8B6B0;
+    --text-tertiary: #76746E;
+    --success: #6BE3A4;
+    --warning: #F2C063;
+    --danger: #FF6B6B;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-radius: 16px;
+    --card-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  }
+
+  body {
+    background-color: #050506;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: env(safe-area-inset-top, 32px) 24px 32px;
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .back-link {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--text-primary); }
+
+  .dash-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 14px;
+  }
+
+  /* CONTEXT CARD */
+  .context-card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    padding: 14px 18px;
+    backdrop-filter: blur(24px) saturate(1.2);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .context-item { display: flex; flex-direction: column; gap: 2px; }
+  .context-label {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .context-value {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .context-value.is-streak { color: var(--warning); }
+
+  /* CHAT */
+  .chat-card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    padding: 16px;
+    backdrop-filter: blur(24px) saturate(1.2);
+    box-shadow: var(--card-shadow);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 4px;
+    min-height: 320px;
+    max-height: 60vh;
+  }
+
+  .chat-empty {
+    margin: auto;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-style: italic;
+    max-width: 280px;
+  }
+
+  .msg {
+    max-width: 82%;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
+    color: #0A0A0B;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg.assistant {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.error {
+    align-self: flex-start;
+    background: rgba(255,107,107,0.10);
+    color: var(--danger);
+    border: 1px solid rgba(255,107,107,0.25);
+    font-size: 12px;
+  }
+
+  .msg.typing { color: var(--text-tertiary); font-style: italic; }
+
+  /* INPUT */
+  .chat-input-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: flex-end;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 14px;
+    margin-top: 14px;
+  }
+
+  .chat-input {
+    flex: 1;
+    resize: none;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+    max-height: 120px;
+    transition: border-color 0.2s;
+  }
+  .chat-input::placeholder { color: var(--text-tertiary); }
+  .chat-input:focus { border-color: rgba(255,255,255,0.25); }
+
+  .chat-send-btn {
+    padding: 11px 20px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
+    color: #0A0A0B;
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+  .chat-send-btn:hover { transform: translateY(-1px); }
+  .chat-send-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+  .chat-status {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    min-height: 16px;
+    margin-top: 6px;
+  }
+  .chat-status.is-error { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="top-row">
+  <h1 class="dash-title">Coach</h1>
+  <a class="back-link" href="index.html">← DASHBOARD</a>
+</div>
+
+<div class="context-card">
+  <div class="context-item">
+    <span class="context-label">TODAY</span>
+    <span class="context-value" id="ctxDate">…</span>
+  </div>
+  <div class="context-item">
+    <span class="context-label">GOALS</span>
+    <span class="context-value" id="ctxGoals">0/0</span>
+  </div>
+  <div class="context-item">
+    <span class="context-label">STREAK</span>
+    <span class="context-value is-streak" id="ctxStreak">0</span>
+  </div>
+</div>
+
+<div class="chat-card">
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-empty" id="chatEmpty">Ask your coach anything about today's goals — it can see what's done, what's pending, and your streak.</div>
+  </div>
+  <div class="chat-input-row">
+    <textarea class="chat-input" id="chatInput" rows="1" placeholder="Talk to your coach…"></textarea>
+    <button class="chat-send-btn" id="chatSendBtn">Send</button>
+  </div>
+  <div class="chat-status" id="chatStatus"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const ANTHROPIC_API_KEY = '';
+const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_K1-mePuh2s7ECxxUdUZtqQ_KY3brvIL';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const APP_KEY = 'po-coach';
+
+// ─── DATES (same 6 AM day-boundary logic as the dashboard) ──────────────────
+function getActiveDateString() {
+  const now = new Date();
+  if (now.getHours() < 6) now.setDate(now.getDate() - 1);
+  return now.toISOString().slice(0, 10);
+}
+function formatDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// ─── STORAGE (localStorage; mirrored to Supabase by the sync engine below) ──
+function storeGet(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function storeSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+// ─── CONTEXT (today's goals + streak, read-only — pulled straight from the
+//     dashboard's synced `app_state` row so it's correct even if this device
+//     never opened index.html) ─────────────────────────────────────────────
+let todayContext = { date: '', goals: [], streak: 0 };
+
+async function loadContext() {
+  const date = getActiveDateString();
+  let goals = [];
+  let streak = 0;
+  try {
+    const { data: row, error } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
+    if (error) throw error;
+    const state = row && row.data;
+    if (state) {
+      if (state['goals:' + date]) goals = JSON.parse(state['goals:' + date]);
+      if (state['goal_streak_v1']) streak = JSON.parse(state['goal_streak_v1']).count || 0;
+    }
+  } catch (e) {
+    console.error('Failed to load dashboard context:', e);
+  }
+  todayContext = { date, goals, streak };
+
+  document.getElementById('ctxDate').textContent = formatDate(date);
+  const done = goals.filter(g => g.done).length;
+  document.getElementById('ctxGoals').textContent = `${done}/${goals.length}`;
+  document.getElementById('ctxStreak').textContent = streak;
+}
+
+function buildSystemPrompt() {
+  const { date, goals, streak } = todayContext;
+  const lines = goals.length
+    ? goals.map(g => `- [${g.done ? 'x' : ' '}] ${g.text}`).join('\n')
+    : '(no goals set for today)';
+  return `You are a supportive, direct personal coach helping the user follow through on their daily goals. Be concise (a few sentences unless asked for more), encouraging but honest, and refer to their actual goals below when relevant. Don't be sycophantic.
+
+Today: ${formatDate(date)}
+Current streak: ${streak} day(s)
+Goals:
+${lines}`;
+}
+
+// ─── CHAT STATE ───────────────────────────────────────────────────────────────
+let messages = []; // { role: 'user' | 'assistant', content: string }
+
+async function loadChatHistory() {
+  messages = storeGet('coach_chat_history') || [];
+  renderMessages();
+}
+function saveChatHistory() {
+  storeSet('coach_chat_history', messages);
+}
+
+function renderMessages() {
+  const el = document.getElementById('chatMessages');
+  const emptyEl = document.getElementById('chatEmpty');
+  el.querySelectorAll('.msg').forEach(n => n.remove());
+  emptyEl.style.display = messages.length ? 'none' : 'block';
+  for (const m of messages) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + m.role;
+    div.textContent = m.content;
+    el.appendChild(div);
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+function showStatus(msg, isError) {
+  const el = document.getElementById('chatStatus');
+  el.textContent = msg;
+  el.classList.toggle('is-error', !!isError);
+}
+
+async function callClaude() {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1024,
+      system: buildSystemPrompt(),
+      messages: messages.map(m => ({ role: m.role, content: m.content }))
+    })
+  });
+  if (!resp.ok) throw new Error('API error ' + resp.status);
+  const data = await resp.json();
+  return data.content[0].text;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('chatSendBtn');
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (!ANTHROPIC_API_KEY) {
+    showStatus('Coach needs an Anthropic API key — set ANTHROPIC_API_KEY at the top of po-coach.html.', true);
+    return;
+  }
+
+  messages.push({ role: 'user', content: text });
+  renderMessages();
+  saveChatHistory();
+  input.value = '';
+  input.style.height = 'auto';
+
+  sendBtn.disabled = true;
+  showStatus('');
+  const el = document.getElementById('chatMessages');
+  const typingEl = document.createElement('div');
+  typingEl.className = 'msg assistant typing';
+  typingEl.textContent = 'Coach is thinking…';
+  el.appendChild(typingEl);
+  el.scrollTop = el.scrollHeight;
+
+  try {
+    const reply = await callClaude();
+    messages.push({ role: 'assistant', content: reply });
+    saveChatHistory();
+  } catch (err) {
+    console.error(err);
+    showStatus('Message failed — try again.', true);
+  } finally {
+    typingEl.remove();
+    renderMessages();
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+document.getElementById('chatSendBtn').addEventListener('click', sendMessage);
+document.getElementById('chatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+document.getElementById('chatInput').addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
+// Keeps localStorage mirrored to the `app_state` row for APP_KEY across devices.
+const SYNC_PREFIXES = [];
+const SYNC_EXACT_KEYS = ['coach_chat_history'];
+
+function isSyncedKey(key) {
+  return SYNC_EXACT_KEYS.includes(key) || SYNC_PREFIXES.some(p => key.startsWith(p));
+}
+
+const rawSetItem = localStorage.setItem.bind(localStorage);
+const rawRemoveItem = localStorage.removeItem.bind(localStorage);
+
+function snapshotSyncedState() {
+  const out = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (isSyncedKey(k)) out[k] = localStorage.getItem(k);
+  }
+  return out;
+}
+
+function applySyncedState(state) {
+  const current = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (isSyncedKey(k)) current.push(k);
+  }
+  for (const k of current) if (!(k in state)) rawRemoveItem(k);
+  for (const [k, v] of Object.entries(state)) rawSetItem(k, v);
+}
+
+function isEditingField() {
+  const el = document.activeElement;
+  if (!el) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
+}
+
+function refreshFromStorage() {
+  messages = storeGet('coach_chat_history') || [];
+  renderMessages();
+}
+
+let lastSyncedJson = null;
+let pendingRemote = null;
+let pushTimer = null;
+
+function schedulePush() {
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushNow, 250);
+}
+
+async function pushNow() {
+  pushTimer = null;
+  const state = snapshotSyncedState();
+  const json = JSON.stringify(state);
+  if (json === lastSyncedJson) return;
+  lastSyncedJson = json;
+  try {
+    const { error } = await sb.from('app_state')
+      .upsert({ key: APP_KEY, data: state, updated_at: new Date().toISOString() });
+    if (error) console.error('Sync push error:', error);
+  } catch (e) { console.error('Sync push failed:', e); }
+}
+
+localStorage.setItem = function (key, value) {
+  rawSetItem(key, value);
+  try { if (isSyncedKey(key)) schedulePush(); } catch (e) { console.error(e); }
+};
+localStorage.removeItem = function (key) {
+  rawRemoveItem(key);
+  try { if (isSyncedKey(key)) schedulePush(); } catch (e) { console.error(e); }
+};
+
+function applyRemote(state) {
+  if (isEditingField()) { pendingRemote = state; return; }
+  applySyncedState(state);
+  refreshFromStorage();
+}
+
+document.addEventListener('focusout', () => {
+  if (pendingRemote) {
+    const state = pendingRemote;
+    pendingRemote = null;
+    applySyncedState(state);
+    refreshFromStorage();
+  }
+});
+
+async function pullAndApply() {
+  const { data: row, error } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+  if (error) { console.error('Sync pull error:', error); return; }
+  if (!row || !row.data || Object.keys(row.data).length === 0) {
+    const local = snapshotSyncedState();
+    if (Object.keys(local).length > 0) {
+      lastSyncedJson = JSON.stringify(local);
+      await sb.from('app_state').upsert({ key: APP_KEY, data: local, updated_at: new Date().toISOString() });
+    }
+    return;
+  }
+  lastSyncedJson = JSON.stringify(row.data);
+  applyRemote(row.data);
+}
+
+function subscribeRealtime() {
+  sb.channel('app_state_' + APP_KEY)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'app_state', filter: `key=eq.${APP_KEY}` },
+      (payload) => {
+        const newState = payload.new && payload.new.data;
+        if (!newState) return;
+        const json = JSON.stringify(newState);
+        if (json === lastSyncedJson) return;
+        lastSyncedJson = json;
+        applyRemote(newState);
+      })
+    .subscribe();
+}
+
+function flushSync() {
+  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+  const state = snapshotSyncedState();
+  const json = JSON.stringify(state);
+  if (json === lastSyncedJson) return;
+  lastSyncedJson = json;
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key: APP_KEY, data: state, updated_at: new Date().toISOString() })
+    });
+  } catch (e) { console.error('Sync flush failed:', e); }
+}
+
+window.addEventListener('pagehide', flushSync);
+window.addEventListener('beforeunload', flushSync);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSync(); });
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(async () => {
+  await loadContext();
+  await pullAndApply();
+  subscribeRealtime();
+  messages = storeGet('coach_chat_history') || [];
+  renderMessages();
+})();
+</script>
+</body>
+</html>
