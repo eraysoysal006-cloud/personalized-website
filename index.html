@@ -772,6 +772,65 @@
     color: var(--text-tertiary);
   }
 
+  /* NUTRITION */
+  .nutrition-macros {
+    display: flex;
+    flex-direction: row;
+    gap: 18px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .macro-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .macro-value {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .macro-label {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .nutrition-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.035);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .nutrition-item-text {
+    flex: 1;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    min-width: 0;
+  }
+
+  .nutrition-item-macros {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   /* DRAG OVER */
   .goal-item.drag-over-top    { border-top: 2px solid rgba(255,255,255,0.3); }
   .goal-item.drag-over-bottom { border-bottom: 2px solid rgba(255,255,255,0.3); }
@@ -894,6 +953,26 @@
       <button class="goal-polish-btn" id="tomorrowPolishBtn">✨ Polish</button>
     </div>
     <div class="polish-status" id="tomorrowStatus"></div>
+  </div>
+</div>
+
+<!-- NUTRITION -->
+<div class="section">
+  <div class="section-title">Nutrition</div>
+  <div class="gm-card" id="nutritionCard">
+    <div class="gm-card-header">
+      <div class="gm-card-header-left" style="flex: 1;">
+        <div class="gm-eyebrow" id="nutritionLabel">Today — …</div>
+        <div class="nutrition-macros">
+          <div class="macro-stat"><span class="macro-value" id="macroCalories">0</span><span class="macro-label">kcal</span></div>
+          <div class="macro-stat"><span class="macro-value" id="macroProtein">0g</span><span class="macro-label">protein</span></div>
+          <div class="macro-stat"><span class="macro-value" id="macroCarbs">0g</span><span class="macro-label">carbs</span></div>
+          <div class="macro-stat"><span class="macro-value" id="macroFat">0g</span><span class="macro-label">fat</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state" id="nutritionEmptyState">Nothing logged yet — send a voice note on WhatsApp about what you ate.</div>
+    <ul id="nutritionList" class="goal-list gm-list"></ul>
   </div>
 </div>
 
@@ -1398,6 +1477,66 @@ function loadTomorrow() {
   renderListInto(goals, document.getElementById('tomorrowList'), document.getElementById('tomorrowEmptyState'), key, true);
 }
 
+// ─── NUTRITION (log entries arrive via the WhatsApp bot; this is read/delete only) ─
+function loadNutrition() {
+  const date = getActiveDateString();
+  const key = 'nutrition:' + date;
+  const entries = storeGet(key) || [];
+
+  document.getElementById('nutritionLabel').textContent = 'Today — ' + formatDate(date);
+
+  const totals = entries.reduce((acc, e) => {
+    acc.calories += Number(e.calories) || 0;
+    acc.protein += Number(e.protein) || 0;
+    acc.carbs += Number(e.carbs) || 0;
+    acc.fat += Number(e.fat) || 0;
+    return acc;
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+  document.getElementById('macroCalories').textContent = Math.round(totals.calories);
+  document.getElementById('macroProtein').textContent = Math.round(totals.protein) + 'g';
+  document.getElementById('macroCarbs').textContent = Math.round(totals.carbs) + 'g';
+  document.getElementById('macroFat').textContent = Math.round(totals.fat) + 'g';
+
+  const listEl = document.getElementById('nutritionList');
+  const emptyEl = document.getElementById('nutritionEmptyState');
+  listEl.innerHTML = '';
+
+  if (entries.length === 0) {
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  entries.forEach((e, idx) => {
+    const li = document.createElement('li');
+    li.className = 'nutrition-item';
+
+    const textEl = document.createElement('span');
+    textEl.className = 'nutrition-item-text';
+    textEl.textContent = e.text;
+    li.appendChild(textEl);
+
+    const macrosEl = document.createElement('span');
+    macrosEl.className = 'nutrition-item-macros';
+    macrosEl.textContent = `${Math.round(e.calories || 0)} kcal · ${Math.round(e.protein || 0)}p · ${Math.round(e.carbs || 0)}c · ${Math.round(e.fat || 0)}f`;
+    li.appendChild(macrosEl);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'goal-delete';
+    delBtn.textContent = '×';
+    delBtn.style.opacity = '0.5';
+    delBtn.addEventListener('click', () => {
+      entries.splice(idx, 1);
+      storeSet(key, entries);
+      loadNutrition();
+    });
+    li.appendChild(delBtn);
+
+    listEl.appendChild(li);
+  });
+}
+
 // ─── ADD + POLISH ─────────────────────────────────────────────────────────────
 function showStatus(el, msg, isError, ms) {
   el.textContent = msg;
@@ -1494,7 +1633,7 @@ document.getElementById('gmPushBtn').addEventListener('click', () => {
 
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 // Keeps localStorage mirrored to the `app_state` row for APP_KEY across devices.
-const SYNC_PREFIXES = ['goals:'];
+const SYNC_PREFIXES = ['goals:', 'nutrition:'];
 const SYNC_EXACT_KEYS = ['goal_streak_v1'];
 
 function isSyncedKey(key) {
@@ -1533,6 +1672,7 @@ function refreshFromStorage() {
   renderStreak();
   loadToday();
   loadTomorrow();
+  loadNutrition();
   window.dispatchEvent(new CustomEvent('goals-changed'));
 }
 
@@ -1646,6 +1786,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   renderStreak();
   loadToday();
   loadTomorrow();
+  loadNutrition();
   makeAddHandlers('goalInput', 'goalAddBtn', 'goalPolishBtn',
     'goals:' + getActiveDateString(), 'polishStatus', loadToday);
   makeAddHandlers('tomorrowInput', 'tomorrowAddBtn', 'tomorrowPolishBtn',
