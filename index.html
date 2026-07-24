@@ -1622,18 +1622,25 @@ function storeListKeys(prefix) {
 }
 
 // ─── DATES ──────────────────────────────────────────────────────────────────
+// Local calendar date as YYYY-MM-DD — never use toISOString() for this, it
+// converts to UTC first and silently shifts the date in positive-offset
+// timezones (e.g. a local-midnight Date becomes "yesterday" in UTC).
+function toDateKey(dt) {
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
+
 function getActiveDateString() {
   const now = new Date();
   if (now.getHours() < 6) now.setDate(now.getDate() - 1);
-  return now.toISOString().slice(0, 10);
+  return toDateKey(now);
 }
 
 function getTomorrowDateString() {
   const now = new Date();
-  if (now.getHours() < 6) return now.toISOString().slice(0, 10);
+  if (now.getHours() < 6) return toDateKey(now);
   const tom = new Date(now);
   tom.setDate(tom.getDate() + 1);
-  return tom.toISOString().slice(0, 10);
+  return toDateKey(tom);
 }
 
 function formatDate(str) {
@@ -2012,7 +2019,7 @@ function nutritionShiftDate(dateStr, delta) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() + delta);
-  return dt.toISOString().slice(0, 10);
+  return toDateKey(dt);
 }
 
 function loadNutrition() {
@@ -2082,7 +2089,7 @@ function loadNutrition() {
 // ─── HABITS ───────────────────────────────────────────────────────────────────
 // habits:definitions -> [{ id, name, weeklyTarget, activeFromHour, subItems?: [{id,name}] }]
 // habits:log:YYYY-MM-DD -> { [habitId]: true | { [subItemId]: true } }
-function habitDateKey(d) { return d.toISOString().slice(0, 10); }
+function habitDateKey(d) { return toDateKey(d); }
 
 function isHabitDoneForDay(h, dateStr) {
   const log = storeGet('habits:log:' + dateStr) || {};

@@ -310,10 +310,16 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const APP_KEY = 'po-coach';
 
 // ─── DATES (same 6 AM day-boundary logic as the dashboard) ──────────────────
+// Local calendar date as YYYY-MM-DD — never toISOString() for this, it
+// converts to UTC first and silently shifts the date in positive-offset
+// timezones (e.g. a local-midnight Date becomes "yesterday" in UTC).
+function toDateKey(dt) {
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
 function getActiveDateString() {
   const now = new Date();
   if (now.getHours() < 6) now.setDate(now.getDate() - 1);
-  return now.toISOString().slice(0, 10);
+  return toDateKey(now);
 }
 function formatDate(str) {
   const [y, m, d] = str.split('-').map(Number);
