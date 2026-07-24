@@ -2308,13 +2308,29 @@ const FINANCE_CATEGORIES = {
 };
 function financeCategorize(desc, amount) {
   const d = (desc || '').toLowerCase();
-  // "cxroma" only means rent when it's a real rent-sized payment, not a small
-  // incidental charge from the same merchant code.
-  if (d.includes('cxroma')) return (amount != null && amount < 100) ? 'Diğer' : 'Kira';
   for (const [cat, info] of Object.entries(FINANCE_CATEGORIES)) {
     if (info.keys.some(k => d.includes(k))) return cat;
   }
   return 'Diğer';
+}
+
+// "cxroma" is a landlord/rent transfer code, but not every cxroma line is
+// rent (small incidental charges use it too). Rule: per calendar month, only
+// the single LARGEST cxroma payment counts as rent — everything else from
+// that merchant that month is not.
+function financeFixupRentCategories(db) {
+  const byMonth = {};
+  db.txns.forEach(t => {
+    if (t.income) return;
+    if (!(t.desc || '').toLowerCase().includes('cxroma')) return;
+    const month = t.date.slice(0, 7);
+    (byMonth[month] = byMonth[month] || []).push(t);
+  });
+  Object.values(byMonth).forEach(list => {
+    let maxTx = list[0];
+    list.forEach(t => { if (t.amount > maxTx.amount) maxTx = t; });
+    list.forEach(t => { t.category = (t === maxTx) ? 'Kira' : 'Diğer'; });
+  });
 }
 function financeCatColor(c) { return (FINANCE_CATEGORIES[c] || FINANCE_CATEGORIES['Diğer']).color; }
 
@@ -2511,6 +2527,7 @@ function financeImportCSV(text, accId, msgEl) {
     if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc, amount); spend++; }
     db.txns.push(t);
   });
+  financeFixupRentCategories(db);
   financeSave(db);
   showStatus(msgEl, spend + ' expense(s)' + (inc ? ' and ' + inc + ' income' : '') + ' imported' + (dup ? ' (' + dup + ' already existed)' : '') + '.', false, 5000);
   renderFinance();
@@ -2571,7 +2588,8 @@ async function financeImportAI(dataUrl, mimeType, accId, msgEl) {
       if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc, amount); spend++; }
       db.txns.push(t);
     });
-    financeSave(db);
+    financeFixupRentCategories(db);
+  financeSave(db);
     showStatus(msgEl, spend + ' expense(s)' + (inc ? ' and ' + inc + ' income' : '') + ' imported' + (dup ? ' (' + dup + ' already existed)' : '') + '.', false, 5000);
     renderFinance();
   } catch (err) {
