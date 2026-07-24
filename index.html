@@ -1259,17 +1259,6 @@
       <div class="finance-panel-section">
         <div class="finance-panel-title">Accounts</div>
         <div id="financeAccountList" class="finance-account-list"></div>
-        <div class="goal-input-wrap gm-input-wrap">
-          <input class="goal-input" id="financeAccBank" type="text" placeholder="Bank (e.g. Revolut)"/>
-          <input class="goal-input habit-num-input" id="financeAccLast4" type="text" maxlength="4" placeholder="Last 4"/>
-          <select class="goal-input habit-num-input" id="financeAccCur">
-            <option value="TRY">₺ TRY</option>
-            <option value="EUR">€ EUR</option>
-            <option value="USD">$ USD</option>
-            <option value="GBP">£ GBP</option>
-          </select>
-          <button class="goal-add-btn" id="financeAddAccBtn">+ Add</button>
-        </div>
       </div>
 
       <div class="finance-panel-section">
@@ -2252,21 +2241,6 @@ document.getElementById('financeToggleBtn').addEventListener('click', () => {
   document.getElementById('financePanel').classList.toggle('hidden');
 });
 
-document.getElementById('financeAddAccBtn').addEventListener('click', () => {
-  const bank = document.getElementById('financeAccBank').value.trim();
-  if (!bank) return;
-  const db = financeLoad();
-  db.accounts.push({
-    id: financeUid(), bank,
-    last4: document.getElementById('financeAccLast4').value.trim(),
-    cur: document.getElementById('financeAccCur').value
-  });
-  financeSave(db);
-  document.getElementById('financeAccBank').value = '';
-  document.getElementById('financeAccLast4').value = '';
-  renderFinance();
-});
-
 function financeImportCSV(text, accId, msgEl) {
   const db = financeLoad();
   const acc = db.accounts.find(a => a.id === accId);
@@ -2334,7 +2308,9 @@ async function financeImportAI(dataUrl, mimeType, accId, msgEl) {
     });
     if (!resp.ok) throw new Error('API error ' + resp.status);
     const data = await resp.json();
-    const txns = JSON.parse(data.content[0].text.trim());
+    let raw = data.content[0].text.trim();
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    const txns = JSON.parse(raw);
 
     let spend = 0, inc = 0, dup = 0;
     txns.forEach(item => {
