@@ -1069,6 +1069,17 @@
   }
 
   /* HABITS */
+  .habits-reminder {
+    margin: 10px 0 14px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(251,191,36,0.08);
+    border: 1px solid rgba(251,191,36,0.25);
+    color: var(--warning);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
   .habits-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
@@ -1594,6 +1605,7 @@
         </div>
       </div>
     </div>
+    <div class="habits-reminder hidden" id="habitsReminder"></div>
     <div class="habits-grid" id="habitsGrid"></div>
     <div class="empty-state" id="habitsEmptyState">No habits yet — add one below.</div>
     <button class="finance-viewall-btn" id="habitAddOpenBtn" type="button">+ Add habit</button>
@@ -2182,6 +2194,41 @@ function toggleSubItem(h, subId, date, tileEl) {
   }
 }
 
+// Time remaining until the 6 AM day boundary, for the "not done yet" nudge.
+function timeUntilRollover() {
+  const now = new Date();
+  const rollover = new Date(now);
+  rollover.setHours(6, 0, 0, 0);
+  if (now >= rollover) rollover.setDate(rollover.getDate() + 1);
+  const diffMin = Math.round((rollover - now) / 60000);
+  const h = Math.floor(diffMin / 60), m = diffMin % 60;
+  return h > 0 ? `${h} saat ${m} dk` : `${m} dk`;
+}
+
+function renderHabitsReminder(defs, date, nowHour) {
+  const el = document.getElementById('habitsReminder');
+  const pending = [];
+  for (const h of defs) {
+    if (h.subItems && h.subItems.length) {
+      const log = storeGet('habits:log:' + date) || {};
+      const entry = (log[h.id] && typeof log[h.id] === 'object') ? log[h.id] : {};
+      for (const si of h.subItems) {
+        const unlocked = si.unlockHour == null || nowHour >= si.unlockHour;
+        if (unlocked && !entry[si.id]) pending.push(h.name + ' — ' + si.name);
+      }
+    } else {
+      const isActive = h.activeFromHour == null || nowHour >= h.activeFromHour;
+      if (isActive && !isHabitDoneForDay(h, date)) pending.push(h.name);
+    }
+  }
+  if (pending.length === 0) { el.classList.add('hidden'); return; }
+  const timeLeft = timeUntilRollover();
+  el.textContent = '⏰ ' + (pending.length === 1
+    ? `${pending[0]} — henüz yapılmadı, ${timeLeft} kaldı`
+    : `${pending.length} habit henüz yapılmadı — ${timeLeft} kaldı`);
+  el.classList.remove('hidden');
+}
+
 function loadHabits() {
   const date = getActiveDateString();
   const defs = storeGet('habits:definitions') || [];
@@ -2196,9 +2243,11 @@ function loadHabits() {
     document.getElementById('habitsProgressNum').textContent = '0';
     document.getElementById('habitsProgressTotal').textContent = '/ 0';
     document.getElementById('habitsProgressLabel').textContent = 'no habits yet';
+    document.getElementById('habitsReminder').classList.add('hidden');
     return;
   }
   emptyEl.style.display = 'none';
+  renderHabitsReminder(defs, date, nowHour);
 
   const activeDefs = defs.filter(h => h.activeFromHour == null || nowHour >= h.activeFromHour);
   const doneToday = activeDefs.filter(h => isHabitDoneForDay(h, date)).length;

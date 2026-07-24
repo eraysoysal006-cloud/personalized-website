@@ -538,6 +538,101 @@ async function logNutritionEntry(entry) {
   }
 }
 
+// ─── WEEKLY RECAP (Sunday evening) ───────────────────────────────────────────
+// The first time the Coach page is opened at/after Sunday 18:00, generate a
+// short review of the past 7 days and drop it into the chat as an assistant
+// message — no backend/cron involved, this is purely "next time you open it".
+// coach_last_recap_week is synced (see SYNC_EXACT_KEYS below) so a second
+// device won't regenerate it once one device already has.
+function mostRecentSundayMidnight(d) {
+  const r = new Date(d);
+  r.setDate(r.getDate() - r.getDay());
+  r.setHours(0, 0, 0, 0);
+  return r;
+}
+
+async function maybeGenerateWeeklyRecap() {
+  if (!ANTHROPIC_API_KEY) return;
+  const now = new Date();
+  const sunday = mostRecentSundayMidnight(now);
+  const boundary = new Date(sunday);
+  boundary.setHours(18, 0, 0, 0);
+  if (now < boundary) return; // this week's Sunday-evening window hasn't started yet
+  const weekKey = toDateKey(sunday);
+  if (storeGet('coach_last_recap_week') === weekKey) return; // already recapped this week
+
+  try {
+    const { data: row, error } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
+    if (error) throw error;
+    const state = (row && row.data) || {};
+    const defs = state['habits:definitions'] ? JSON.parse(state['habits:definitions']) : [];
+
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      days.push(toDateKey(d));
+    }
+
+    let totalCal = 0, totalProt = 0, loggedDays = 0;
+    for (const day of days) {
+      const raw = state['nutrition:' + day];
+      if (!raw) continue;
+      const entries = JSON.parse(raw);
+      if (!entries.length) continue;
+      loggedDays++;
+      for (const e of entries) { totalCal += Number(e.calories) || 0; totalProt += Number(e.protein) || 0; }
+    }
+    const avgCal = loggedDays ? Math.round(totalCal / loggedDays) : 0;
+    const avgProt = loggedDays ? Math.round(totalProt / loggedDays) : 0;
+
+    let habitDone = 0, habitTotal = 0;
+    for (const day of days) {
+      const log = state['habits:log:' + day] ? JSON.parse(state['habits:log:' + day]) : {};
+      for (const h of defs) {
+        habitTotal++;
+        const entry = log[h.id];
+        const done = (h.subItems && h.subItems.length)
+          ? !!(entry && typeof entry === 'object' && h.subItems.every(si => entry[si.id]))
+          : !!entry;
+        if (done) habitDone++;
+      }
+    }
+
+    const streak = state['goal_streak_v1'] ? (JSON.parse(state['goal_streak_v1']).count || 0) : 0;
+
+    const facts = `Last 7 days (${days[0]} to ${days[6]}):
+- Nutrition logged on ${loggedDays}/7 days. On logged days, avg ${avgCal} kcal/day and ${avgProt}g protein/day.
+- Habits completed: ${habitDone}/${habitTotal} (across all habits, all 7 days).
+- Current daily-goal streak: ${streak} days.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 220,
+        system: 'You are a terse, warm coach texting in Turkish. Given the week\'s stats below, write a short (3-5 sentence) Sunday-evening week-in-review as a natural text message — what went well, one honest thing to improve, no bullet lists, no headers, no fluff, not preachy. He is bulking (calorie surplus, protein-focused goal).',
+        messages: [{ role: 'user', content: facts }]
+      })
+    });
+    if (!resp.ok) throw new Error('Recap API error ' + resp.status);
+    const data = await resp.json();
+    const text = data.content[0].text;
+
+    messages.push({ role: 'assistant', content: text });
+    saveChatHistory();
+    renderMessages();
+    storeSet('coach_last_recap_week', weekKey);
+  } catch (e) {
+    console.error('Weekly recap failed:', e);
+  }
+}
+
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSendBtn');
@@ -678,7 +773,7 @@ document.getElementById('chatMicBtn').addEventListener('click', toggleRecording)
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 // Keeps localStorage mirrored to the `app_state` row for APP_KEY across devices.
 const SYNC_PREFIXES = [];
-const SYNC_EXACT_KEYS = ['coach_chat_history'];
+const SYNC_EXACT_KEYS = ['coach_chat_history', 'coach_last_recap_week'];
 
 function isSyncedKey(key) {
   return SYNC_EXACT_KEYS.includes(key) || SYNC_PREFIXES.some(p => key.startsWith(p));
@@ -826,6 +921,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   subscribeRealtime();
   messages = storeGet('coach_chat_history') || [];
   renderMessages();
+  maybeGenerateWeeklyRecap();
 })();
 </script>
 </body>
