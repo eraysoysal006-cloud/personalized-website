@@ -576,6 +576,7 @@
     box-shadow: var(--card-shadow);
     margin-bottom: 12px;
     transition: background 0.4s ease;
+    overflow: hidden;
   }
 
   .gm-card.gm-all-done {
@@ -592,7 +593,7 @@
     margin-bottom: 14px;
   }
 
-  .gm-card-header-left { display: flex; flex-direction: column; }
+  .gm-card-header-left { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
 
   .gm-eyebrow {
     font-size: 10.5px;
@@ -648,6 +649,8 @@
     color: var(--text-tertiary);
     font-size: 13px;
     border: 1px solid transparent;
+    flex-shrink: 0;
+    white-space: nowrap;
     transition: all 0.3s;
   }
 
