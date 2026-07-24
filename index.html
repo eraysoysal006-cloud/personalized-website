@@ -23,6 +23,7 @@
   }
 
   body {
+    zoom: 1.1;
     background-color: #08090B;
     font-family: var(--font-sans);
     color: var(--text-primary);
@@ -1347,6 +1348,21 @@
   </div>
 </div>
 
+<div class="finance-tx-modal-bg hidden" id="habitAddModalBg">
+  <div class="finance-tx-modal" style="max-width:360px;">
+    <div class="finance-tx-modal-header">
+      <span>Add habit</span>
+      <button class="finance-tx-modal-close" id="habitAddModalClose" type="button">×</button>
+    </div>
+    <div class="goal-input-wrap gm-input-wrap habit-input-wrap" style="border-top:none; padding-top:0; margin-top:0;">
+      <input class="goal-input" id="habitNameInput" type="text" placeholder="Habit name…" autocomplete="off"/>
+      <input class="goal-input habit-num-input" id="habitTargetInput" type="number" min="1" max="7" value="7" placeholder="x/week"/>
+      <input class="goal-input habit-num-input" id="habitHourInput" type="number" min="0" max="23" placeholder="Active from (hr)"/>
+      <button class="goal-add-btn" id="habitAddBtn">+ Add</button>
+    </div>
+  </div>
+</div>
+
 <nav class="tabbar" aria-label="Primary">
   <div class="tabbar-inner">
     <a class="tab" href="index.html" aria-current="page">
@@ -1522,12 +1538,7 @@
     </div>
     <div class="habits-grid" id="habitsGrid"></div>
     <div class="empty-state" id="habitsEmptyState">No habits yet — add one below.</div>
-    <div class="goal-input-wrap gm-input-wrap habit-input-wrap">
-      <input class="goal-input" id="habitNameInput" type="text" placeholder="Habit name…" autocomplete="off"/>
-      <input class="goal-input habit-num-input" id="habitTargetInput" type="number" min="1" max="7" value="7" placeholder="x/week"/>
-      <input class="goal-input habit-num-input" id="habitHourInput" type="number" min="0" max="23" placeholder="Active from (hr)"/>
-      <button class="goal-add-btn" id="habitAddBtn">+ Add</button>
-    </div>
+    <button class="finance-viewall-btn" id="habitAddOpenBtn" type="button">+ Add habit</button>
   </div>
 </div>
 
@@ -2235,6 +2246,18 @@ document.getElementById('habitAddBtn').addEventListener('click', () => {
   targetInput.value = '7';
   hourInput.value = '';
   loadHabits();
+  document.getElementById('habitAddModalBg').classList.add('hidden');
+});
+
+document.getElementById('habitAddOpenBtn').addEventListener('click', () => {
+  document.getElementById('habitAddModalBg').classList.remove('hidden');
+  document.getElementById('habitNameInput').focus();
+});
+document.getElementById('habitAddModalClose').addEventListener('click', () => {
+  document.getElementById('habitAddModalBg').classList.add('hidden');
+});
+document.getElementById('habitAddModalBg').addEventListener('click', (e) => {
+  if (e.target.id === 'habitAddModalBg') document.getElementById('habitAddModalBg').classList.add('hidden');
 });
 
 // ─── FINANCE ──────────────────────────────────────────────────────────────────
