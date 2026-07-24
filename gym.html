@@ -132,7 +132,7 @@ html, body {
 /* Defeat the default `min-width: auto` on flex/grid items — without
    this, long text or wide buttons can force their parent past the
    viewport even with max-width set. */
-.po-shell *, .tabbar * { min-width: 0; }
+.po-shell *, .tabbar *, .po-modal-bg *, .wt-overlay *, .wt-viewer * { min-width: 0; }
 /* No image, video, or canvas can ever push the page past the viewport */
 img, video, canvas, svg { max-width: 100%; }
 
@@ -1661,6 +1661,7 @@ img, video, canvas, svg { max-width: 100%; }
     <div class="po-field" id="exStepField">
       <label style="font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:0.04em;text-transform:uppercase">Increment</label>
       <input type="number" id="exStep" step="0.5" value="2.5">
+      <span style="font-size:11px;color:var(--text-3);line-height:1.4;">How much weight to add when the coach tells you to progress (e.g. hit target reps → +2.5kg next session).</span>
     </div>
     <div class="po-modal-actions">
       <button class="po-btn-secondary" id="exModalCancel">Cancel</button>
@@ -1846,6 +1847,7 @@ img, video, canvas, svg { max-width: 100%; }
   // RENDER
   // ============================================================
   function renderFilters() {
+    $('gymSeg').closest('.po-seg-row').style.display = state.gyms.length > 1 ? '' : 'none';
     $('gymSeg').innerHTML = state.gyms.map(g =>
       '<button class="po-seg-btn ' + (g.id === state.filterGym ? 'active' : '') + '" data-gym="' + g.id + '">' + escape(g.name) + '</button>'
     ).join('');
@@ -2353,7 +2355,10 @@ img, video, canvas, svg { max-width: 100%; }
   function renderModalSegs() {
     $('exGymSeg').innerHTML = state.gyms.map(g =>
       '<button data-gym="' + g.id + '" class="' + (modalGym === g.id ? 'active' : '') + '">' + escape(g.name) + '</button>'
-    ).join('') + '<button data-gym="both" class="' + (modalGym === 'both' ? 'active' : '') + '">Both</button>';
+    ).join('') + (state.gyms.length > 1
+      ? '<button data-gym="both" class="' + (modalGym === 'both' ? 'active' : '') + '">Both</button>'
+      : '');
+    document.getElementById('exGymSeg').closest('.po-field').style.display = state.gyms.length > 1 ? '' : 'none';
     $('exDaySeg').innerHTML = state.days.map(d =>
       '<button data-day="' + d.id + '" class="' + (modalDay === d.id ? 'active' : '') + '">' + escape(d.name) + '</button>'
     ).join('');
