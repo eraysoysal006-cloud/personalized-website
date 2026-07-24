@@ -206,6 +206,31 @@
   .chat-send-btn:hover { transform: translateY(-1px); }
   .chat-send-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
 
+  .chat-mic-btn {
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .chat-mic-btn:hover { background: rgba(255,255,255,0.10); }
+  .chat-mic-btn:disabled { opacity: 0.5; cursor: default; }
+  .chat-mic-btn.is-recording {
+    background: rgba(248,113,113,0.15);
+    border-color: rgba(248,113,113,0.4);
+    color: var(--danger);
+    animation: micPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes micPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.35); }
+    50% { box-shadow: 0 0 0 7px rgba(248,113,113,0); }
+  }
+
   .chat-status {
     font-size: 11px;
     color: var(--text-tertiary);
@@ -296,6 +321,7 @@
   </div>
   <div class="chat-input-row">
     <textarea class="chat-input" id="chatInput" rows="1" placeholder="Talk to your coach…"></textarea>
+    <button class="chat-mic-btn" id="chatMicBtn" type="button" title="Voice message">🎙️</button>
     <button class="chat-send-btn" id="chatSendBtn">Send</button>
   </div>
   <div class="chat-status" id="chatStatus"></div>
@@ -304,6 +330,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const ANTHROPIC_API_KEY = '';
+const GROQ_API_KEY = '';
 const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_K1-mePuh2s7ECxxUdUZtqQ_KY3brvIL';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -568,6 +595,85 @@ document.getElementById('chatInput').addEventListener('input', function () {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
+
+// ─── VOICE INPUT (record → Groq Whisper transcription) ──────────────────────
+let mediaRecorder = null;
+let audioChunks = [];
+let micStream = null;
+
+function pickMicMimeType() {
+  const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+  for (const t of candidates) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return '';
+}
+
+async function toggleRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+  if (!GROQ_API_KEY) {
+    showStatus('Voice input needs a Groq API key — set GROQ_API_KEY at the top of po-coach.html.', true);
+    return;
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    showStatus('Microphone access denied.', true);
+    return;
+  }
+  audioChunks = [];
+  const mimeType = pickMicMimeType();
+  mediaRecorder = new MediaRecorder(micStream, mimeType ? { mimeType } : undefined);
+  mediaRecorder.addEventListener('dataavailable', (e) => { if (e.data.size > 0) audioChunks.push(e.data); });
+  mediaRecorder.addEventListener('stop', () => {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+    document.getElementById('chatMicBtn').classList.remove('is-recording');
+    const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+    if (blob.size > 0) transcribeAndFill(blob);
+  });
+  mediaRecorder.start();
+  document.getElementById('chatMicBtn').classList.add('is-recording');
+  showStatus('Recording… tap the mic again to stop.');
+}
+
+async function transcribeAndFill(blob) {
+  const micBtn = document.getElementById('chatMicBtn');
+  micBtn.disabled = true;
+  showStatus('Transcribing…');
+  try {
+    const ext = (blob.type.includes('mp4')) ? 'mp4' : (blob.type.includes('ogg') ? 'ogg' : 'webm');
+    const form = new FormData();
+    form.append('file', blob, 'voice.' + ext);
+    form.append('model', 'whisper-large-v3-turbo');
+    form.append('language', 'tr');
+    form.append('response_format', 'json');
+    const resp = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + GROQ_API_KEY },
+      body: form
+    });
+    if (!resp.ok) throw new Error('Transcription API error ' + resp.status);
+    const data = await resp.json();
+    const text = (data.text || '').trim();
+    if (!text) { showStatus('Could not hear anything — try again.', true); return; }
+    const input = document.getElementById('chatInput');
+    input.value = (input.value ? input.value + ' ' : '') + text;
+    input.dispatchEvent(new Event('input'));
+    input.focus();
+    showStatus('');
+  } catch (e) {
+    console.error(e);
+    showStatus('Transcription failed — try again.', true);
+  } finally {
+    micBtn.disabled = false;
+  }
+}
+
+document.getElementById('chatMicBtn').addEventListener('click', toggleRecording);
 
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 // Keeps localStorage mirrored to the `app_state` row for APP_KEY across devices.
