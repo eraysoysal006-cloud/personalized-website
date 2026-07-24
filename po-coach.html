@@ -375,12 +375,16 @@ function buildSystemPrompt() {
   const lines = goals.length
     ? goals.map(g => `- [${g.done ? 'x' : ' '}] ${g.text}`).join('\n')
     : '(no goals set for today)';
-  return `You are a supportive, direct personal coach helping the user follow through on their daily goals. Be concise (a few sentences unless asked for more), encouraging but honest, and refer to their actual goals below when relevant. Don't be sycophantic.
+  return `You are a supportive, direct personal coach helping the user follow through on their daily goals and nutrition. Be concise (a few sentences unless asked for more), encouraging but honest, and refer to their actual goals below when relevant. Don't be sycophantic. The user usually writes in Turkish — reply in the same language they use.
 
 Today: ${formatDate(date)}
 Current streak: ${streak} day(s)
 Goals:
-${lines}`;
+${lines}
+
+NUTRITION LOGGING: if (and only if) the user's message describes something they ate or drank, estimate its nutrition and append exactly one line at the very end of your reply, on its own line, in this exact machine-readable format (the app parses and hides this line from the user, so it must match exactly):
+NUTRITION_LOG: {"text":"short description","calories":number,"protein":number,"carbs":number,"fat":number}
+Use your best real-world estimate for a typical portion if they don't give exact amounts. Do not add this line for messages that aren't about food/drink. Never mention this tag to the user or explain that you're logging anything in a technical way — just respond naturally about their meal (e.g. confirm what you logged) and let the tag do its job silently.`;
 }
 
 // ─── CHAT STATE ───────────────────────────────────────────────────────────────
@@ -435,6 +439,35 @@ async function callClaude() {
   return data.content[0].text;
 }
 
+// Pulls a trailing "NUTRITION_LOG: {...}" line out of the coach's reply (if
+// present) so it never shows up in the chat bubble, and returns the parsed entry.
+function extractNutritionTag(text) {
+  const m = text.match(/NUTRITION_LOG:\s*(\{[\s\S]*?\})\s*$/);
+  if (!m) return { cleanText: text, entry: null };
+  let entry = null;
+  try { entry = JSON.parse(m[1]); } catch (e) { console.error('Bad NUTRITION_LOG tag:', e); }
+  return { cleanText: text.slice(0, m.index).trim(), entry };
+}
+
+// Nutrition data lives on the dashboard's own app_state row (key: 'dashboard'),
+// not this page's. Read-modify-write, merging onto whatever's already there.
+async function logNutritionEntry(entry) {
+  const date = getActiveDateString();
+  const nutritionKey = 'nutrition:' + date;
+  try {
+    const { data: row, error: readErr } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
+    if (readErr) throw readErr;
+    const remoteData = Object.assign({}, (row && row.data) || {});
+    const existing = remoteData[nutritionKey] ? JSON.parse(remoteData[nutritionKey]) : [];
+    existing.push(entry);
+    remoteData[nutritionKey] = JSON.stringify(existing);
+    const { error } = await sb.from('app_state').upsert({ key: 'dashboard', data: remoteData, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  } catch (e) {
+    console.error('Failed to log nutrition entry:', e);
+  }
+}
+
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSendBtn');
@@ -463,8 +496,13 @@ async function sendMessage() {
 
   try {
     const reply = await callClaude();
-    messages.push({ role: 'assistant', content: reply });
+    const { cleanText, entry } = extractNutritionTag(reply);
+    messages.push({ role: 'assistant', content: cleanText || reply });
     saveChatHistory();
+    if (entry) {
+      logNutritionEntry(entry);
+      loadContext();
+    }
   } catch (err) {
     console.error(err);
     showStatus('Message failed — try again.', true);

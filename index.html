@@ -1540,7 +1540,11 @@
   <div class="gm-card" id="nutritionCard">
     <div class="gm-card-header">
       <div class="gm-card-header-left" style="flex: 1;">
-        <div class="gm-eyebrow" id="nutritionLabel">Today — …</div>
+        <div class="finance-month-nav">
+          <button class="finance-month-arrow" id="nutritionPrevBtn" type="button" aria-label="Previous day">‹</button>
+          <div class="gm-eyebrow" id="nutritionLabel">Today — …</div>
+          <button class="finance-month-arrow" id="nutritionNextBtn" type="button" aria-label="Next day">›</button>
+        </div>
         <div class="nutrition-macros">
           <div class="macro-stat"><span class="macro-value" id="macroCalories">0</span><span class="macro-label">kcal</span></div>
           <div class="macro-stat"><span class="macro-value" id="macroProtein">0g</span><span class="macro-label">protein</span></div>
@@ -1991,12 +1995,24 @@ function loadTomorrow() {
 }
 
 // ─── NUTRITION (log entries arrive via the WhatsApp bot; this is read/delete only) ─
+let nutritionViewDate = null; // null = today; else 'YYYY-MM-DD'
+
+function nutritionShiftDate(dateStr, delta) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + delta);
+  return dt.toISOString().slice(0, 10);
+}
+
 function loadNutrition() {
-  const date = getActiveDateString();
+  const today = getActiveDateString();
+  const date = nutritionViewDate || today;
+  const isToday = date === today;
   const key = 'nutrition:' + date;
   const entries = storeGet(key) || [];
 
-  document.getElementById('nutritionLabel').textContent = 'Today — ' + formatDate(date);
+  document.getElementById('nutritionLabel').textContent = (isToday ? 'Today — ' : '') + formatDate(date);
+  document.getElementById('nutritionNextBtn').disabled = isToday;
 
   const totals = entries.reduce((acc, e) => {
     acc.calories += Number(e.calories) || 0;
@@ -2636,6 +2652,17 @@ document.getElementById('financeImportBtn').addEventListener('click', () => {
 document.getElementById('financeEyeBtn').addEventListener('click', () => {
   financeAmountHidden = !financeAmountHidden;
   renderFinance();
+});
+
+document.getElementById('nutritionPrevBtn').addEventListener('click', () => {
+  nutritionViewDate = nutritionShiftDate(nutritionViewDate || getActiveDateString(), -1);
+  loadNutrition();
+});
+document.getElementById('nutritionNextBtn').addEventListener('click', () => {
+  const today = getActiveDateString();
+  const next = nutritionShiftDate(nutritionViewDate || today, 1);
+  nutritionViewDate = (next === today) ? null : next;
+  loadNutrition();
 });
 
 document.getElementById('financeMonthPrevBtn').addEventListener('click', () => {
