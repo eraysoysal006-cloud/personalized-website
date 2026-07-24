@@ -351,6 +351,28 @@
   }
   .finance-account-row span { flex: 1; color: var(--text-secondary); }
 
+  .finance-month-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .finance-month-arrow {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 7px;
+    width: 22px;
+    height: 22px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .finance-month-arrow:hover { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+  .finance-month-arrow:disabled { opacity: 0.3; cursor: default; }
+  .finance-month-arrow:disabled:hover { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
+
   .finance-eye-btn {
     background: none;
     border: 1px solid rgba(255,255,255,0.10);
@@ -1405,7 +1427,11 @@
   <div class="gm-card" id="financeCard">
     <div class="gm-card-header">
       <div class="gm-card-header-left">
-        <div class="gm-eyebrow" id="financeMonthLabel">This month</div>
+        <div class="finance-month-nav">
+          <button class="finance-month-arrow" id="financeMonthPrevBtn" type="button" aria-label="Previous month">‹</button>
+          <div class="gm-eyebrow" id="financeMonthLabel">This month</div>
+          <button class="finance-month-arrow" id="financeMonthNextBtn" type="button" aria-label="Next month">›</button>
+        </div>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <button class="finance-eye-btn" id="financeEyeBtn" type="button" title="Show/hide amount">🙈</button>
@@ -2348,14 +2374,31 @@ function financeCurrentMonthKey() {
   return getActiveDateString().slice(0, 7);
 }
 
+let financeViewMonth = null; // null = current month; else 'YYYY-MM'
+
+function financeShiftMonth(monthKey, delta) {
+  const [y, m] = monthKey.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 let financeAmountHidden = true;
 let financeTxSort = 'date';
 
+function financeMonthDisplayLabel(monthKey, isCurrent) {
+  const [y, m] = monthKey.split('-').map(Number);
+  const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return (isCurrent ? 'This month — ' : '') + names[m - 1] + ' ' + y;
+}
+
 function renderFinance() {
   const db = financeLoad();
-  const month = financeCurrentMonthKey();
+  const currentMonth = financeCurrentMonthKey();
+  const month = financeViewMonth || currentMonth;
+  const isCurrent = month === currentMonth;
   const cur = 'EUR';
-  document.getElementById('financeMonthLabel').textContent = 'This month — ' + month;
+  document.getElementById('financeMonthLabel').textContent = financeMonthDisplayLabel(month, isCurrent);
+  document.getElementById('financeMonthNextBtn').disabled = isCurrent;
   document.getElementById('financeEyeBtn').textContent = financeAmountHidden ? '🙈' : '👁️';
 
   const monthTxns = db.txns.filter(t => t.date.startsWith(month) && !t.income);
@@ -2565,9 +2608,21 @@ document.getElementById('financeEyeBtn').addEventListener('click', () => {
   renderFinance();
 });
 
+document.getElementById('financeMonthPrevBtn').addEventListener('click', () => {
+  const current = financeViewMonth || financeCurrentMonthKey();
+  financeViewMonth = financeShiftMonth(current, -1);
+  renderFinance();
+});
+document.getElementById('financeMonthNextBtn').addEventListener('click', () => {
+  const current = financeViewMonth || financeCurrentMonthKey();
+  const next = financeShiftMonth(current, 1);
+  financeViewMonth = (next === financeCurrentMonthKey()) ? null : next;
+  renderFinance();
+});
+
 function renderFinanceTxModal() {
   const db = financeLoad();
-  const month = financeCurrentMonthKey();
+  const month = financeViewMonth || financeCurrentMonthKey();
   const cur = 'EUR';
   const txns = db.txns.filter(t => t.date.startsWith(month));
 
