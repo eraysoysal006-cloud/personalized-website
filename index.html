@@ -1370,6 +1370,27 @@
   </div>
 </div>
 
+<div class="finance-tx-modal-bg hidden" id="financeImportModalBg">
+  <div class="finance-tx-modal" style="max-width:420px;">
+    <div class="finance-tx-modal-header">
+      <span>Import statement</span>
+      <button class="finance-tx-modal-close" id="financeImportModalClose" type="button">×</button>
+    </div>
+    <div class="finance-panel-section" style="padding-top:0; border-top:none;">
+      <div class="finance-panel-title">Accounts</div>
+      <div id="financeAccountList" class="finance-account-list"></div>
+    </div>
+    <div class="finance-panel-section">
+      <div class="finance-panel-title">Import statement (CSV, PDF, or a photo)</div>
+      <select class="goal-input" id="financeCsvAcc" style="margin-bottom:8px;"></select>
+      <input type="file" id="financeCsvFile" accept=".csv,text/csv,.pdf,application/pdf,image/*" style="margin-bottom:8px;"/>
+      <textarea class="goal-input" id="financeCsvText" rows="3" placeholder="…or paste CSV content here" style="width:100%;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea>
+      <button class="goal-add-btn" id="financeImportBtn" style="margin-top:8px;">Import</button>
+      <div class="polish-status" id="financeCsvMsg"></div>
+    </div>
+  </div>
+</div>
+
 <div class="finance-tx-modal-bg hidden" id="habitAddModalBg">
   <div class="finance-tx-modal" style="max-width:360px;">
     <div class="finance-tx-modal-header">
@@ -1456,22 +1477,7 @@
     </div>
     <div class="empty-state" id="financeEmptyState">No transactions yet — tap "+ Add / Import" below.</div>
 
-    <button class="finance-toggle-btn" id="financeToggleBtn" type="button">+ Add / Import</button>
-    <div class="finance-panel hidden" id="financePanel">
-      <div class="finance-panel-section">
-        <div class="finance-panel-title">Accounts</div>
-        <div id="financeAccountList" class="finance-account-list"></div>
-      </div>
-
-      <div class="finance-panel-section">
-        <div class="finance-panel-title">Import statement (CSV, PDF, or a photo)</div>
-        <select class="goal-input" id="financeCsvAcc" style="margin-bottom:8px;"></select>
-        <input type="file" id="financeCsvFile" accept=".csv,text/csv,.pdf,application/pdf,image/*" style="margin-bottom:8px;"/>
-        <textarea class="goal-input" id="financeCsvText" rows="3" placeholder="…or paste CSV content here" style="width:100%;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea>
-        <button class="goal-add-btn" id="financeImportBtn" style="margin-top:8px;">Import</button>
-        <div class="polish-status" id="financeCsvMsg"></div>
-      </div>
-    </div>
+    <button class="finance-viewall-btn" id="financeToggleBtn" type="button">Import statement →</button>
   </div>
 </div>
 
@@ -2501,7 +2507,13 @@ function renderFinance() {
 }
 
 document.getElementById('financeToggleBtn').addEventListener('click', () => {
-  document.getElementById('financePanel').classList.toggle('hidden');
+  document.getElementById('financeImportModalBg').classList.remove('hidden');
+});
+document.getElementById('financeImportModalClose').addEventListener('click', () => {
+  document.getElementById('financeImportModalBg').classList.add('hidden');
+});
+document.getElementById('financeImportModalBg').addEventListener('click', (e) => {
+  if (e.target.id === 'financeImportModalBg') document.getElementById('financeImportModalBg').classList.add('hidden');
 });
 
 function financeImportCSV(text, accId, msgEl) {
