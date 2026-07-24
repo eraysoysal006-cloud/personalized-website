@@ -1248,27 +1248,9 @@
       </div>
 
       <div class="finance-panel-section">
-        <div class="finance-panel-title">Add expense / income</div>
-        <div class="goal-input-wrap gm-input-wrap">
-          <input class="goal-input habit-num-input" id="financeTxDate" type="date"/>
-          <input class="goal-input habit-num-input" id="financeTxAmt" type="text" inputmode="decimal" placeholder="Amount"/>
-          <input class="goal-input" id="financeTxDesc" type="text" placeholder="Description"/>
-        </div>
-        <div class="goal-input-wrap gm-input-wrap">
-          <select class="goal-input" id="financeTxAcc"></select>
-          <select class="goal-input habit-num-input" id="financeTxType">
-            <option value="spend">− Expense</option>
-            <option value="income">+ Income</option>
-          </select>
-          <button class="goal-add-btn" id="financeAddTxBtn">+ Add</button>
-        </div>
-        <div class="polish-status" id="financeAddMsg"></div>
-      </div>
-
-      <div class="finance-panel-section">
-        <div class="finance-panel-title">Import CSV (Revolut export etc.)</div>
+        <div class="finance-panel-title">Import statement (CSV, PDF, or a photo)</div>
         <select class="goal-input" id="financeCsvAcc" style="margin-bottom:8px;"></select>
-        <input type="file" id="financeCsvFile" accept=".csv,text/csv" style="margin-bottom:8px;"/>
+        <input type="file" id="financeCsvFile" accept=".csv,text/csv,.pdf,application/pdf,image/*" style="margin-bottom:8px;"/>
         <textarea class="goal-input" id="financeCsvText" rows="3" placeholder="…or paste CSV content here" style="width:100%;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea>
         <button class="goal-add-btn" id="financeImportBtn" style="margin-top:8px;">Import</button>
         <div class="polish-status" id="financeCsvMsg"></div>
@@ -2205,11 +2187,7 @@ function renderFinance() {
   const accOptions = db.accounts.length
     ? db.accounts.map(a => `<option value="${a.id}">${financeAccLabel(a)} (${a.cur})</option>`).join('')
     : '<option value="">Add an account first</option>';
-  document.getElementById('financeTxAcc').innerHTML = accOptions;
   document.getElementById('financeCsvAcc').innerHTML = accOptions;
-  if (!document.getElementById('financeTxDate').value) {
-    document.getElementById('financeTxDate').value = new Date().toISOString().slice(0, 10);
-  }
 }
 
 document.getElementById('financeToggleBtn').addEventListener('click', () => {
@@ -2228,28 +2206,6 @@ document.getElementById('financeAddAccBtn').addEventListener('click', () => {
   financeSave(db);
   document.getElementById('financeAccBank').value = '';
   document.getElementById('financeAccLast4').value = '';
-  renderFinance();
-});
-
-document.getElementById('financeAddTxBtn').addEventListener('click', () => {
-  const msgEl = document.getElementById('financeAddMsg');
-  const accId = document.getElementById('financeTxAcc').value;
-  const amt = financeParseAmount(document.getElementById('financeTxAmt').value);
-  if (!accId) { showStatus(msgEl, 'Add an account first.', true); return; }
-  if (amt === null || amt === 0) { showStatus(msgEl, 'Enter a valid amount.', true); return; }
-  const db = financeLoad();
-  const acc = db.accounts.find(a => a.id === accId);
-  const desc = document.getElementById('financeTxDesc').value.trim() || '(no description)';
-  const date = document.getElementById('financeTxDate').value || new Date().toISOString().slice(0, 10);
-  const amount = Math.abs(amt);
-  const isIncome = document.getElementById('financeTxType').value === 'income';
-  const t = { id: financeUid(), accountId: accId, date, desc, amount, cur: acc.cur };
-  if (isIncome) t.income = true; else t.category = financeCategorize(desc);
-  db.txns.push(t);
-  financeSave(db);
-  showStatus(msgEl, 'Added: ' + desc);
-  document.getElementById('financeTxAmt').value = '';
-  document.getElementById('financeTxDesc').value = '';
   renderFinance();
 });
 
@@ -2281,20 +2237,88 @@ function financeImportCSV(text, accId, msgEl) {
   renderFinance();
 }
 
+async function financeImportAI(dataUrl, mimeType, accId, msgEl) {
+  if (!ANTHROPIC_API_KEY) {
+    showStatus(msgEl, 'PDF/photo import needs an Anthropic API key — paste CSV instead for now.', true, 6000);
+    return;
+  }
+  const db = financeLoad();
+  const acc = db.accounts.find(a => a.id === accId);
+  if (!acc) { showStatus(msgEl, 'Add an account first.', true); return; }
+
+  showStatus(msgEl, 'Reading statement…', false, 30000);
+  const base64 = dataUrl.split(',')[1];
+  const isPdf = mimeType === 'application/pdf';
+  const contentBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+    : { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } };
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: [
+            contentBlock,
+            { type: 'text', text: 'Extract every transaction from this bank statement. Return ONLY a JSON array, no prose, no code fences. Each item: {"date":"YYYY-MM-DD","desc":"merchant or description","amount":number (positive),"type":"expense"|"income"}. Money leaving the account is "expense"; money arriving is "income".' }
+          ]
+        }]
+      })
+    });
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+    const txns = JSON.parse(data.content[0].text.trim());
+
+    let spend = 0, inc = 0, dup = 0;
+    txns.forEach(item => {
+      const amount = Math.abs(Number(item.amount));
+      if (!amount) return;
+      const date = financeNormDate(item.date);
+      const desc = (item.desc || '').trim() || '(no description)';
+      const isInc = item.type === 'income';
+      if (db.txns.some(x => x.accountId === accId && x.date === date && x.desc === desc && x.amount === amount && !!x.income === isInc)) { dup++; return; }
+      const t = { id: financeUid(), accountId: accId, date, desc, amount, cur: acc.cur };
+      if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc); spend++; }
+      db.txns.push(t);
+    });
+    financeSave(db);
+    showStatus(msgEl, spend + ' expense(s)' + (inc ? ' and ' + inc + ' income' : '') + ' imported' + (dup ? ' (' + dup + ' already existed)' : '') + '.', false, 5000);
+    renderFinance();
+  } catch (err) {
+    console.error(err);
+    showStatus(msgEl, 'Could not read that file — try a CSV instead.', true, 6000);
+  }
+}
+
 document.getElementById('financeImportBtn').addEventListener('click', () => {
   const accId = document.getElementById('financeCsvAcc').value;
   const msgEl = document.getElementById('financeCsvMsg');
   const f = document.getElementById('financeCsvFile').files[0];
   const pasted = document.getElementById('financeCsvText').value.trim();
   if (f) {
+    const isCsv = f.type === 'text/csv' || /\.csv$/i.test(f.name);
     const rd = new FileReader();
-    rd.onload = e => { financeImportCSV(e.target.result, accId, msgEl); document.getElementById('financeCsvFile').value = ''; };
-    rd.readAsText(f, 'utf-8');
+    if (isCsv) {
+      rd.onload = e => { financeImportCSV(e.target.result, accId, msgEl); document.getElementById('financeCsvFile').value = ''; };
+      rd.readAsText(f, 'utf-8');
+    } else {
+      rd.onload = e => { financeImportAI(e.target.result, f.type || 'application/pdf', accId, msgEl); document.getElementById('financeCsvFile').value = ''; };
+      rd.readAsDataURL(f);
+    }
   } else if (pasted) {
     financeImportCSV(pasted, accId, msgEl);
     document.getElementById('financeCsvText').value = '';
   } else {
-    showStatus(msgEl, 'Choose a CSV file or paste its content.', true);
+    showStatus(msgEl, 'Choose a file or paste CSV content.', true);
   }
 });
 
