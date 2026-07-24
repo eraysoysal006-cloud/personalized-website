@@ -215,35 +215,27 @@
     flex-shrink: 0;
   }
 
-  /* DAY RING */
-  .day-ring-section {
+  /* FINANCE */
+  .finance-body {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 26px;
+    gap: 22px;
     flex-wrap: wrap;
-    background: var(--card-bg);
-    border-radius: var(--card-radius);
-    padding: 22px;
-    backdrop-filter: blur(24px) saturate(1.2);
-    box-shadow: var(--card-shadow);
-    margin-bottom: 18px;
+    margin-top: 10px;
   }
 
-  .day-ring-wrap {
-    width: 168px;
-    height: 168px;
+  .finance-donut-wrap {
+    width: 148px;
+    height: 148px;
     position: relative;
     flex-shrink: 0;
+    margin: 0 auto;
   }
 
-  .day-ring-wrap svg {
-    width: 100%;
-    height: 100%;
-  }
+  .finance-donut { width: 100%; height: 100%; }
 
-  .day-ring-overlay {
+  .finance-donut-overlay {
     position: absolute;
     inset: 0;
     display: flex;
@@ -251,59 +243,112 @@
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    gap: 0;
   }
 
-  .ring-percent {
-    font-size: 40px;
+  .finance-donut-amount {
+    font-size: 22px;
     font-weight: 800;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.04em;
-    line-height: 1;
     color: var(--text-primary);
   }
 
-  .ring-phase {
+  .finance-donut-label {
     font-family: var(--font-mono);
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--text-tertiary);
-    margin-top: 5px;
-  }
-
-  .ring-clock {
-    font-family: var(--font-mono);
-    font-size: 10.5px;
     color: var(--text-tertiary);
     margin-top: 3px;
   }
 
-  .day-ring-info {
-    max-width: 280px;
+  .finance-legend {
+    flex: 1;
+    min-width: 180px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px;
   }
 
-  .ring-status {
-    font-size: 14px;
+  .finance-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+  }
+
+  .finance-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .finance-legend-name {
+    flex: 1;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .finance-legend-amt {
+    font-variant-numeric: tabular-nums;
     font-weight: 700;
     color: var(--text-primary);
   }
 
-  .ring-remaining {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--text-secondary);
+  .finance-legend-pct {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    margin-left: 4px;
   }
 
-  .ring-hours {
-    font-family: var(--font-mono);
-    font-size: 11px;
+  .finance-toggle-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: 1px dashed rgba(255,255,255,0.12);
+    border-radius: 10px;
     color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
   }
+  .finance-toggle-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text-primary); background: rgba(255,255,255,0.04); }
+
+  .finance-panel { margin-top: 14px; display: flex; flex-direction: column; gap: 18px; }
+
+  .finance-panel-section {
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .finance-panel-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+
+  .finance-account-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+
+  .finance-account-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+  .finance-account-row span { flex: 1; color: var(--text-secondary); }
 
   /* SECTION */
   .section { margin-bottom: 18px; }
@@ -1085,9 +1130,8 @@
     .goal-ticker-row { font-size: 12px; }
     .goal-ticker-meta { font-size: 10px; padding: 2px 7px; }
 
-    .day-ring-wrap { width: 144px; height: 144px; }
-    .ring-percent { font-size: 32px; }
-    .ring-status { font-size: 13px; }
+    .finance-donut-wrap { width: 128px; height: 128px; }
+    .finance-donut-amount { font-size: 18px; }
   }
 </style>
 </head>
@@ -1136,35 +1180,73 @@
   </div>
 </div>
 
-<!-- DAY RING -->
-<div class="day-ring-section">
-  <div class="day-ring-wrap">
-    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="ringGlow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <circle id="ringTrack" cx="60" cy="60" r="52"
-        fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-      <circle id="ringFill" cx="60" cy="60" r="52"
-        fill="none" stroke="#FFD89E" stroke-width="8" stroke-linecap="round"
-        transform="rotate(-90 60 60)"
-        filter="url(#ringGlow)"
-        style="transition: stroke-dashoffset 0.7s cubic-bezier(0.22,1,0.36,1), stroke 0.7s cubic-bezier(0.22,1,0.36,1);"/>
-    </svg>
-    <div class="day-ring-overlay">
-      <span class="ring-percent" id="ringPercent">—</span>
-      <span class="ring-phase" id="ringPhase">SLEEPING</span>
-      <span class="ring-clock" id="ringClock">--:-- --</span>
+<!-- FINANCE -->
+<div class="section">
+  <div class="section-title">Finance</div>
+  <div class="gm-card" id="financeCard">
+    <div class="gm-card-header">
+      <div class="gm-card-header-left">
+        <div class="gm-eyebrow" id="financeMonthLabel">This month</div>
+      </div>
+      <button class="sleep-toggle-btn" id="sleepGoToBedBtn" type="button">😴 Going to sleep</button>
     </div>
-  </div>
-  <div class="day-ring-info">
-    <div class="ring-status" id="ringStatus">😴 Still sleeping</div>
-    <div class="ring-remaining" id="ringRemaining">Calculating…</div>
-    <div class="ring-hours">8:00 AM – 12:00 AM</div>
-    <button class="sleep-toggle-btn" id="sleepGoToBedBtn" type="button">😴 Going to sleep</button>
+    <div class="finance-body">
+      <div class="finance-donut-wrap">
+        <svg class="finance-donut" id="financeDonut" viewBox="0 0 120 120"></svg>
+        <div class="finance-donut-overlay">
+          <span class="finance-donut-amount" id="financeTotalAmount">—</span>
+          <span class="finance-donut-label">spent</span>
+        </div>
+      </div>
+      <div class="finance-legend" id="financeLegend"></div>
+    </div>
+    <div class="empty-state" id="financeEmptyState">No transactions yet — tap "+ Add / Import" below.</div>
+
+    <button class="finance-toggle-btn" id="financeToggleBtn" type="button">+ Add / Import</button>
+    <div class="finance-panel hidden" id="financePanel">
+      <div class="finance-panel-section">
+        <div class="finance-panel-title">Accounts</div>
+        <div id="financeAccountList" class="finance-account-list"></div>
+        <div class="goal-input-wrap gm-input-wrap">
+          <input class="goal-input" id="financeAccBank" type="text" placeholder="Bank (e.g. Revolut)"/>
+          <input class="goal-input habit-num-input" id="financeAccLast4" type="text" maxlength="4" placeholder="Last 4"/>
+          <select class="goal-input habit-num-input" id="financeAccCur">
+            <option value="TRY">₺ TRY</option>
+            <option value="EUR">€ EUR</option>
+            <option value="USD">$ USD</option>
+            <option value="GBP">£ GBP</option>
+          </select>
+          <button class="goal-add-btn" id="financeAddAccBtn">+ Add</button>
+        </div>
+      </div>
+
+      <div class="finance-panel-section">
+        <div class="finance-panel-title">Add expense / income</div>
+        <div class="goal-input-wrap gm-input-wrap">
+          <input class="goal-input habit-num-input" id="financeTxDate" type="date"/>
+          <input class="goal-input habit-num-input" id="financeTxAmt" type="text" inputmode="decimal" placeholder="Amount"/>
+          <input class="goal-input" id="financeTxDesc" type="text" placeholder="Description"/>
+        </div>
+        <div class="goal-input-wrap gm-input-wrap">
+          <select class="goal-input" id="financeTxAcc"></select>
+          <select class="goal-input habit-num-input" id="financeTxType">
+            <option value="spend">− Expense</option>
+            <option value="income">+ Income</option>
+          </select>
+          <button class="goal-add-btn" id="financeAddTxBtn">+ Add</button>
+        </div>
+        <div class="polish-status" id="financeAddMsg"></div>
+      </div>
+
+      <div class="finance-panel-section">
+        <div class="finance-panel-title">Import CSV (Revolut export etc.)</div>
+        <select class="goal-input" id="financeCsvAcc" style="margin-bottom:8px;"></select>
+        <input type="file" id="financeCsvFile" accept=".csv,text/csv" style="margin-bottom:8px;"/>
+        <textarea class="goal-input" id="financeCsvText" rows="3" placeholder="…or paste CSV content here" style="width:100%;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea>
+        <button class="goal-add-btn" id="financeImportBtn" style="margin-top:8px;">Import</button>
+        <div class="polish-status" id="financeCsvMsg"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1269,8 +1351,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const ANTHROPIC_API_KEY = '';
-const WAKE_HOUR = 8;
-const SLEEP_HOUR = 24;
 
 // ─── SUPABASE ───────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
@@ -1364,96 +1444,11 @@ function runStreakCheck() {
   return state.count;
 }
 
-// ─── DAY RING ───────────────────────────────────────────────────────────────
-const SUN_PALETTE = [
-  [255,216,158],[255,205,121],[255,227,143],[255,183,106],
-  [255,149,89],[243,111,79],[226,93,122],[123,91,176],[47,58,102]
-];
-
-function lerpColor(a, b, t) {
-  return [
-    Math.round(a[0] + (b[0]-a[0])*t),
-    Math.round(a[1] + (b[1]-a[1])*t),
-    Math.round(a[2] + (b[2]-a[2])*t)
-  ];
-}
-
-function sunColor(pct) {
-  const stops = SUN_PALETTE;
-  const n = stops.length - 1;
-  const idx = Math.min(pct / 100 * n, n - 0.0001);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  const [r,g,b] = lerpColor(stops[lo], stops[hi], idx - lo);
-  return `rgb(${r},${g},${b})`;
-}
-
 function fmtClock(now) {
   let h = now.getHours(), m = now.getMinutes();
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
-}
-
-function fmtDur(totalMins) {
-  const h = Math.floor(totalMins / 60);
-  const m = totalMins % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-}
-
-function updateDayBar() {
-  const now = new Date();
-  const C = 2 * Math.PI * 52;
-  const ringFill = document.getElementById('ringFill');
-  const ringTrack = document.getElementById('ringTrack');
-  const ringPercent = document.getElementById('ringPercent');
-  const ringPhase = document.getElementById('ringPhase');
-  const ringClock = document.getElementById('ringClock');
-  const ringStatus = document.getElementById('ringStatus');
-  const ringRemaining = document.getElementById('ringRemaining');
-
-  ringFill.setAttribute('stroke-dasharray', C);
-  ringClock.textContent = fmtClock(now);
-
-  const hours = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
-
-  if (hours < WAKE_HOUR) {
-    ringFill.setAttribute('stroke-dashoffset', C);
-    ringFill.setAttribute('stroke', '#4D4B47');
-    ringTrack.setAttribute('stroke', 'rgba(255,255,255,0.06)');
-    ringPercent.textContent = '—';
-    ringPhase.textContent = 'SLEEPING';
-    ringStatus.textContent = '😴 Still sleeping';
-    const minsLeft = Math.round((WAKE_HOUR - hours) * 60);
-    ringRemaining.textContent = `${fmtDur(minsLeft)} until wake-up`;
-  } else if (hours < SLEEP_HOUR) {
-    const pct = (hours - WAKE_HOUR) / (SLEEP_HOUR - WAKE_HOUR) * 100;
-    const offset = C * (1 - pct / 100);
-    ringFill.setAttribute('stroke-dashoffset', offset);
-    ringFill.setAttribute('stroke', sunColor(pct));
-    ringPercent.textContent = Math.round(pct) + '%';
-
-    let phase, status;
-    if (pct < 25) { phase = 'MORNING'; status = '☀️ Morning — fresh start'; }
-    else if (pct < 50) { phase = 'MIDDAY'; status = '⚡ Midday — keep moving'; }
-    else if (pct < 75) { phase = 'AFTERNOON'; status = '🔥 Afternoon — push it'; }
-    else if (pct < 90) { phase = 'EVENING'; status = '⏳ Evening — wrap up'; }
-    else { phase = 'BEDTIME'; status = '🌙 Bedtime soon'; }
-
-    ringPhase.textContent = phase;
-    ringStatus.textContent = status;
-    const minsLeft = Math.round((SLEEP_HOUR - hours) * 60);
-    ringRemaining.textContent = `${fmtDur(minsLeft)} awake time left`;
-  } else {
-    ringFill.setAttribute('stroke-dashoffset', 0);
-    ringFill.setAttribute('stroke', '#E25D7A');
-    ringPercent.textContent = '100%';
-    ringPhase.textContent = 'PAST BEDTIME';
-    ringStatus.textContent = '⚠️ Past bedtime';
-    ringRemaining.textContent = 'Sleep!';
-  }
 }
 
 // ─── TICKER ─────────────────────────────────────────────────────────────────
@@ -2024,6 +2019,256 @@ document.getElementById('habitAddBtn').addEventListener('click', () => {
   loadHabits();
 });
 
+// ─── FINANCE ──────────────────────────────────────────────────────────────────
+// finance:data -> { accounts: [{id,bank,last4,cur}], txns: [{id,accountId,date,desc,amount,cur,category?,income?}], displayCur }
+const FINANCE_RATES = { EUR: 53.3, USD: 46.6, GBP: 63, TRY: 1 };
+const FINANCE_SYM = { TRY: '₺', EUR: '€', USD: '$', GBP: '£' };
+const FINANCE_CATEGORIES = {
+  'Market': { color: '#5C7FEA', keys: ['bim','a101','şok','sok','migros','carrefour','tesco','lidl','market','macrocenter','grocery','aldi','action','conad','esselunga','pam ','coop','crai','todis','penny','eurospin','despar','sigma'] },
+  'Giyim': { color: '#F472B6', keys: ['zara','lcw','lc waikiki','defacto','mango','h&m','hm ','koton','bershka','pull','nike','adidas','boyner','trendyol','zalando','clothing','primark','ovs','kiabi'] },
+  'Yeme-İçme': { color: '#FB923C', keys: ['restaurant','cafe','kafe','starbucks','burger','mcdonald','dominos','pizza','yemek','yemeksepeti','kahve','bar ','pub ','restoran','ristorante','trattoria','pizzeria','osteria','gelat','forno','glovo','deliveroo','just eat'] },
+  'Online': { color: '#22D3EE', keys: ['getir','banabi','hepsiburada','amazon','n11','gittigidiyor','aliexpress'] },
+  'Ulaşım': { color: '#60A5FA', keys: ['shell','bp ','opet','petrol','total','benzin','istanbulkart','metro istanbul','uber','bitaksi','taksi','iett','fuel','transport','tfl','trenitalia','italo','bolt','flixbus','freenow'] },
+  'Eğitim': { color: '#E879F9', keys: ['preply','italki','udemy','coursera','duolingo','okul','kurs',' ders','tuition','university','üniversite','school','babbel'] },
+  'Faturalar': { color: '#A78BFA', keys: ['turkcell','vodafone','türk telekom','turk telekom','elektrik','su faturası','doğalgaz','dogalgaz','internet','fatura','bill','utilities','iliad','enel'] },
+  'Eğlence': { color: '#FACC15', keys: ['netflix','spotify','youtube','cinema','sinema','disney','steam','playstation','game','bilet','etkinlik','prime video','hbo'] },
+  'Sağlık': { color: '#2DD4BF', keys: ['eczane','pharmacy','farmacia','hastane','medical','doktor','dent','sağlık','optik'] },
+  'Kozmetik': { color: '#EC4899', keys: ['watsons','watson','rossmann','rossman','sephora','gratis','flormar','douglas','the body shop','golden rose','parfüm','kozmetik'] },
+  'Kira': { color: '#F43F5E', keys: ['kira','rent','affitto','locazione','fitto'] },
+  'Transfer': { color: '#818CF8', keys: ['iban','havale','eft','fast','transfer','gönderim','gonderim','para gönder'] },
+  'Para Çekme': { color: '#94A3B8', keys: ['atm','withdrawal','nakit','cash','prelievo'] },
+  'Diğer': { color: '#64748B', keys: [] }
+};
+function financeCategorize(desc) {
+  const d = (desc || '').toLowerCase();
+  for (const [cat, info] of Object.entries(FINANCE_CATEGORIES)) {
+    if (info.keys.some(k => d.includes(k))) return cat;
+  }
+  return 'Diğer';
+}
+function financeCatColor(c) { return (FINANCE_CATEGORIES[c] || FINANCE_CATEGORIES['Diğer']).color; }
+
+function financeLoad() {
+  return storeGet('finance:data') || { accounts: [], txns: [], displayCur: 'TRY' };
+}
+function financeSave(db) { storeSet('finance:data', db); }
+const financeToTRY = (a, c) => a * (FINANCE_RATES[c] || 1);
+const financeConvTo = (a, from, to) => financeToTRY(a, from) / (FINANCE_RATES[to] || 1);
+const financeFmt = (n, cur) => FINANCE_SYM[cur || 'TRY'] + Math.round(n).toLocaleString('tr-TR');
+const financeUid = () => 'f_' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+function financeAccLabel(a) { return a ? ((a.bank || 'Account') + (a.last4 ? ' ••' + a.last4 : '')) : '?'; }
+
+function financeParseAmount(s) {
+  const raw = String(s).replace(/[^\d,.\-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  const n = parseFloat(raw);
+  return isNaN(n) ? null : n;
+}
+function financeNormDate(s) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (s == null || s === '') return today;
+  s = String(s).trim();
+  let m = s.match(/(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+  if (m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+  m = s.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
+  if (m) {
+    let y = m[3]; if (y.length === 2) y = '20' + y;
+    return y + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+  }
+  const d = new Date(s);
+  return isNaN(d) ? today : d.toISOString().slice(0, 10);
+}
+function financeParseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  const firstLine = text.split('\n')[0];
+  const delim = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+function financeFindCol(headers, cands) {
+  for (const c of cands) {
+    const i = headers.findIndex(h => h.toLowerCase().trim().includes(c));
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+function financeCurrentMonthKey() {
+  return getActiveDateString().slice(0, 7);
+}
+
+function renderFinance() {
+  const db = financeLoad();
+  const month = financeCurrentMonthKey();
+  const cur = db.displayCur || 'TRY';
+  document.getElementById('financeMonthLabel').textContent = 'This month — ' + month;
+
+  const monthTxns = db.txns.filter(t => t.date.startsWith(month) && !t.income);
+  const emptyEl = document.getElementById('financeEmptyState');
+  const bodyEl = document.querySelector('.finance-body');
+
+  if (monthTxns.length === 0) {
+    emptyEl.style.display = 'block';
+    bodyEl.style.display = 'none';
+    document.getElementById('financeTotalAmount').textContent = financeFmt(0, cur);
+    document.getElementById('financeDonut').innerHTML =
+      '<circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14"/>';
+    document.getElementById('financeLegend').innerHTML = '';
+  } else {
+    emptyEl.style.display = 'none';
+    bodyEl.style.display = 'flex';
+
+    const total = monthTxns.reduce((s, t) => s + financeConvTo(t.amount, t.cur, cur), 0);
+    document.getElementById('financeTotalAmount').textContent = financeFmt(total, cur);
+
+    const byCat = {};
+    monthTxns.forEach(t => {
+      const c = t.category || 'Diğer';
+      byCat[c] = (byCat[c] || 0) + financeConvTo(t.amount, t.cur, cur);
+    });
+    const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+
+    const svg = document.getElementById('financeDonut');
+    const R = 48, C = 2 * Math.PI * R;
+    let off = 0;
+    svg.innerHTML = cats.map(([c, v]) => {
+      const len = Math.max(C * (v / total), 0);
+      const seg = `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${financeCatColor(c)}" stroke-width="14" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"/>`;
+      off += len;
+      return seg;
+    }).join('');
+
+    document.getElementById('financeLegend').innerHTML = cats.map(([c, v]) => `
+      <div class="finance-legend-row">
+        <span class="finance-legend-dot" style="background:${financeCatColor(c)}"></span>
+        <span class="finance-legend-name">${c}</span>
+        <span class="finance-legend-amt">${financeFmt(v, cur)}<span class="finance-legend-pct">${Math.round(v / total * 100)}%</span></span>
+      </div>
+    `).join('');
+  }
+
+  // Accounts list + selects
+  const accList = document.getElementById('financeAccountList');
+  accList.innerHTML = db.accounts.map(a => `
+    <div class="finance-account-row">
+      <span>${financeAccLabel(a)} (${a.cur})</span>
+      <button class="goal-delete" data-acc-del="${a.id}" style="opacity:0.6;">×</button>
+    </div>
+  `).join('');
+  accList.querySelectorAll('[data-acc-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this account and all its transactions?')) return;
+      const d = financeLoad();
+      d.accounts = d.accounts.filter(a => a.id !== btn.dataset.accDel);
+      d.txns = d.txns.filter(t => t.accountId !== btn.dataset.accDel);
+      financeSave(d);
+      renderFinance();
+    });
+  });
+
+  const accOptions = db.accounts.length
+    ? db.accounts.map(a => `<option value="${a.id}">${financeAccLabel(a)} (${a.cur})</option>`).join('')
+    : '<option value="">Add an account first</option>';
+  document.getElementById('financeTxAcc').innerHTML = accOptions;
+  document.getElementById('financeCsvAcc').innerHTML = accOptions;
+  if (!document.getElementById('financeTxDate').value) {
+    document.getElementById('financeTxDate').value = new Date().toISOString().slice(0, 10);
+  }
+}
+
+document.getElementById('financeToggleBtn').addEventListener('click', () => {
+  document.getElementById('financePanel').classList.toggle('hidden');
+});
+
+document.getElementById('financeAddAccBtn').addEventListener('click', () => {
+  const bank = document.getElementById('financeAccBank').value.trim();
+  if (!bank) return;
+  const db = financeLoad();
+  db.accounts.push({
+    id: financeUid(), bank,
+    last4: document.getElementById('financeAccLast4').value.trim(),
+    cur: document.getElementById('financeAccCur').value
+  });
+  financeSave(db);
+  document.getElementById('financeAccBank').value = '';
+  document.getElementById('financeAccLast4').value = '';
+  renderFinance();
+});
+
+document.getElementById('financeAddTxBtn').addEventListener('click', () => {
+  const msgEl = document.getElementById('financeAddMsg');
+  const accId = document.getElementById('financeTxAcc').value;
+  const amt = financeParseAmount(document.getElementById('financeTxAmt').value);
+  if (!accId) { showStatus(msgEl, 'Add an account first.', true); return; }
+  if (amt === null || amt === 0) { showStatus(msgEl, 'Enter a valid amount.', true); return; }
+  const db = financeLoad();
+  const acc = db.accounts.find(a => a.id === accId);
+  const desc = document.getElementById('financeTxDesc').value.trim() || '(no description)';
+  const date = document.getElementById('financeTxDate').value || new Date().toISOString().slice(0, 10);
+  const amount = Math.abs(amt);
+  const isIncome = document.getElementById('financeTxType').value === 'income';
+  const t = { id: financeUid(), accountId: accId, date, desc, amount, cur: acc.cur };
+  if (isIncome) t.income = true; else t.category = financeCategorize(desc);
+  db.txns.push(t);
+  financeSave(db);
+  showStatus(msgEl, 'Added: ' + desc);
+  document.getElementById('financeTxAmt').value = '';
+  document.getElementById('financeTxDesc').value = '';
+  renderFinance();
+});
+
+function financeImportCSV(text, accId, msgEl) {
+  const db = financeLoad();
+  const acc = db.accounts.find(a => a.id === accId);
+  if (!acc) { showStatus(msgEl, 'Add an account first.', true); return; }
+  const rows = financeParseCSV(text);
+  if (rows.length < 2) { showStatus(msgEl, 'CSV looks empty.', true); return; }
+  const head = rows[0];
+  const iDate = financeFindCol(head, ['completed date', 'tarih', 'date']);
+  const iDesc = financeFindCol(head, ['description', 'açıklama', 'aciklama', 'detay', 'merchant', 'işyeri', 'reference']);
+  const iAmt = financeFindCol(head, ['amount', 'tutar', 'harcama']);
+  if (iAmt < 0) { showStatus(msgEl, 'Could not find an amount column.', true); return; }
+  let spend = 0, inc = 0, dup = 0;
+  rows.slice(1).forEach(r => {
+    const amt = financeParseAmount(r[iAmt]);
+    if (amt === null || amt === 0) return;
+    const desc = (iDesc >= 0 ? (r[iDesc] || '') : '').trim() || '(no description)';
+    const date = financeNormDate(iDate >= 0 ? r[iDate] : '');
+    const amount = Math.abs(amt), isInc = amt > 0;
+    if (db.txns.some(x => x.accountId === accId && x.date === date && x.desc === desc && x.amount === amount && !!x.income === isInc)) { dup++; return; }
+    const t = { id: financeUid(), accountId: accId, date, desc, amount, cur: acc.cur };
+    if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc); spend++; }
+    db.txns.push(t);
+  });
+  financeSave(db);
+  showStatus(msgEl, spend + ' expense(s)' + (inc ? ' and ' + inc + ' income' : '') + ' imported' + (dup ? ' (' + dup + ' already existed)' : '') + '.', false, 5000);
+  renderFinance();
+}
+
+document.getElementById('financeImportBtn').addEventListener('click', () => {
+  const accId = document.getElementById('financeCsvAcc').value;
+  const msgEl = document.getElementById('financeCsvMsg');
+  const f = document.getElementById('financeCsvFile').files[0];
+  const pasted = document.getElementById('financeCsvText').value.trim();
+  if (f) {
+    const rd = new FileReader();
+    rd.onload = e => { financeImportCSV(e.target.result, accId, msgEl); document.getElementById('financeCsvFile').value = ''; };
+    rd.readAsText(f, 'utf-8');
+  } else if (pasted) {
+    financeImportCSV(pasted, accId, msgEl);
+    document.getElementById('financeCsvText').value = '';
+  } else {
+    showStatus(msgEl, 'Choose a CSV file or paste its content.', true);
+  }
+});
+
 // ─── SLEEP ────────────────────────────────────────────────────────────────────
 // sleep:state -> { status: 'awake' | 'asleep', bedtimeAt: ISOString|null }
 // sleep:log -> [{ bedtimeAt, wakeAt, minutes }]
@@ -2181,7 +2426,7 @@ document.getElementById('gmPushBtn').addEventListener('click', () => {
 
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 // Keeps localStorage mirrored to the `app_state` row for APP_KEY across devices.
-const SYNC_PREFIXES = ['goals:', 'nutrition:', 'habits:', 'sleep:'];
+const SYNC_PREFIXES = ['goals:', 'nutrition:', 'habits:', 'sleep:', 'finance:'];
 const SYNC_EXACT_KEYS = ['goal_streak_v1'];
 
 function isSyncedKey(key) {
@@ -2223,6 +2468,7 @@ function refreshFromStorage() {
   loadNutrition();
   loadHabits();
   checkSleepGate();
+  renderFinance();
   window.dispatchEvent(new CustomEvent('goals-changed'));
 }
 
@@ -2343,8 +2589,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
     'goals:' + getActiveDateString(), 'polishStatus', loadToday);
   makeAddHandlers('tomorrowInput', 'tomorrowAddBtn', 'tomorrowPolishBtn',
     'goals:' + getTomorrowDateString(), 'tomorrowStatus', loadTomorrow);
-  updateDayBar();
-  setInterval(updateDayBar, 60 * 1000);
+  renderFinance();
   setInterval(loadHabits, 60 * 1000);
   startTicker();
 })();
