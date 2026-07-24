@@ -218,10 +218,9 @@
   /* FINANCE */
   .finance-body {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 22px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
     margin-top: 10px;
   }
 
@@ -230,7 +229,7 @@
     height: 148px;
     position: relative;
     flex-shrink: 0;
-    margin: 0 auto;
+    margin: 0;
   }
 
   .finance-donut { width: 100%; height: 100%; }
@@ -264,8 +263,7 @@
   }
 
   .finance-legend {
-    flex: 1;
-    min-width: 180px;
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 7px;
@@ -357,7 +355,7 @@
   .dash-grid {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-areas: "todo" "habits" "nutrition" "finance";
+    grid-template-areas: "finance" "todo" "habits" "nutrition";
     gap: 18px;
   }
   .dash-grid > .section { margin-bottom: 0; }
@@ -1226,6 +1224,7 @@
           <span class="finance-donut-label">spent</span>
         </div>
       </div>
+      <div class="finance-panel-title" style="margin-bottom:0;">Top categories</div>
       <div class="finance-legend" id="financeLegend"></div>
     </div>
     <div class="empty-state" id="financeEmptyState">No transactions yet — tap "+ Add / Import" below.</div>
@@ -2175,7 +2174,7 @@ function renderFinance() {
       return seg;
     }).join('');
 
-    document.getElementById('financeLegend').innerHTML = cats.map(([c, v]) => `
+    document.getElementById('financeLegend').innerHTML = cats.slice(0, 5).map(([c, v]) => `
       <div class="finance-legend-row">
         <span class="finance-legend-dot" style="background:${financeCatColor(c)}"></span>
         <span class="finance-legend-name">${c}</span>
