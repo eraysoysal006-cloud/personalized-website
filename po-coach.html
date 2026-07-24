@@ -6,6 +6,7 @@
 <title>Coach</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
 
   :root {
     --text-primary: #F5F5F4;
@@ -22,15 +23,17 @@
   }
 
   body {
+    zoom: 1.1;
     background-color: #08090B;
     font-family: var(--font-sans);
     color: var(--text-primary);
     min-height: 100vh;
-    padding: env(safe-area-inset-top, 32px) 24px calc(96px + env(safe-area-inset-bottom));
+    padding: calc(env(safe-area-inset-top, 32px) + 22px) 24px calc(96px + env(safe-area-inset-bottom));
     max-width: 720px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
   }
 
   .top-row {
@@ -386,7 +389,9 @@ NUTRITION LOGGING: if (and only if) the user's message describes something they 
 NUTRITION_LOG: {"text":"short description","calories":number,"protein":number,"carbs":number,"fat":number,"fiber":number}
 Use your best real-world estimate for a typical portion if they don't give exact amounts — NEVER ask a clarifying question about quantity, ingredients, or preparation first. Estimate and log immediately, every time. Do not add this line for messages that aren't about food/drink. Never mention this tag to the user or explain that you're logging anything in a technical way.
 
-IMPORTANT — this is a quick logging tool, not a conversation the user wants to have: keep replies to one short sentence (a few words is fine, e.g. "Logged — ~420 kcal."). Never ask follow-up questions unless the user explicitly asks you something. Don't chit-chat, don't add extra commentary or encouragement unless asked. Every reply costs the user real money, so be as brief as possible while still being useful.`;
+IMPORTANT — this is a quick logging tool, not a conversation the user wants to have: keep replies to one short, natural sentence in casual Turkish, like a friend jotting it down — e.g. "Tamamdır, kalorileri güncelliyorum" or "Not ettim, ~420 kcal". Vary the phrasing naturally instead of repeating the same template every time. Never use the literal word "Logged" or robotic-sounding confirmations. Never ask follow-up questions unless the user explicitly asks you something. Don't chit-chat, don't add extra commentary or encouragement unless asked. Every reply costs the user real money, so be as brief as possible while still being useful.
+
+The user will also mention things like alcohol or a "cheat meal" sometimes — treat those exactly like any other food/drink mention (estimate and log via NUTRITION_LOG, same as above), don't ask about them separately or treat them as a special case needing confirmation.`;
 }
 
 // ─── CHAT STATE ───────────────────────────────────────────────────────────────
