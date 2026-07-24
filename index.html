@@ -831,6 +831,210 @@
     flex-shrink: 0;
   }
 
+  /* HABITS */
+  .habits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .habit-tile {
+    position: relative;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: background 0.2s, opacity 0.2s;
+  }
+
+  .habit-tile.is-done { background: rgba(92,127,234,0.06); }
+  .habit-tile.is-inactive { opacity: 0.45; }
+
+  .habit-tile-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .habit-tile-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .habit-tile-lock {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .habit-tile-bar {
+    height: 4px;
+    margin-bottom: 0;
+  }
+
+  .habit-tile-ratio {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .habit-tile-del {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+    font-size: 14px;
+  }
+
+  .habit-tile:hover .habit-tile-del { opacity: 0.5; }
+  .habit-tile-del:hover { color: var(--danger) !important; opacity: 1 !important; }
+
+  .habit-input-wrap { flex-wrap: wrap; }
+  .habit-num-input { flex: 0 1 100px; min-width: 90px; }
+
+  .habit-subitem-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.45s ease, opacity 0.3s ease, margin 0.45s ease;
+  }
+  .habit-tile.is-collapsing .habit-subitem-list {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .habit-subitem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .habit-subitem-cb .goal-cb-visual { width: 18px; height: 18px; border-radius: 6px; }
+  .habit-subitem-cb .goal-cb-visual::after { left: 4px; top: 1px; width: 6px; height: 9px; }
+  .habit-subitem-cb { width: 18px; height: 18px; }
+
+  .habit-subitem-text {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    transition: color 0.25s ease;
+  }
+  .habit-subitem.is-checked .habit-subitem-text {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.35);
+  }
+
+  .habit-tile-done-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--success);
+    opacity: 0;
+    animation: habitDoneFadeIn 0.4s ease 0.1s forwards;
+  }
+  @keyframes habitDoneFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* SLEEP */
+  .sleep-toggle-btn {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sleep-toggle-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+  .wake-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #08090B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+  .wake-gate.hidden { display: none; }
+  .wake-gate.is-closing { opacity: 0; pointer-events: none; }
+
+  .wake-gate-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .wake-gate-emoji {
+    font-size: 64px;
+    animation: wakeGateFloat 3.5s ease-in-out infinite;
+  }
+  @keyframes wakeGateFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+
+  .wake-gate-text {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .wake-gate-btn {
+    padding: 18px 36px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #7B9BF5 0%, #5C7FEA 100%);
+    color: #08090B;
+    font-family: var(--font-sans);
+    font-weight: 800;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 12px 32px rgba(92,127,234,0.35);
+    transition: transform 0.15s;
+  }
+  .wake-gate-btn:hover { transform: translateY(-2px); }
+  .wake-gate-btn:active { transform: translateY(0) scale(0.97); }
+
+  .wake-gate-cancel {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .wake-gate-cancel:hover { color: var(--text-secondary); }
+
   /* DRAG OVER */
   .goal-item.drag-over-top    { border-top: 2px solid rgba(255,255,255,0.3); }
   .goal-item.drag-over-bottom { border-bottom: 2px solid rgba(255,255,255,0.3); }
@@ -888,6 +1092,15 @@
 </style>
 </head>
 <body>
+
+<div class="wake-gate hidden" id="wakeGate">
+  <div class="wake-gate-inner">
+    <div class="wake-gate-emoji">🌙</div>
+    <div class="wake-gate-text">Sleeping since <span id="wakeGateBedtime">--:--</span></div>
+    <button class="wake-gate-btn" id="wakeUpBtn" type="button">☀️ Uyandım</button>
+    <span class="wake-gate-cancel" id="wakeGateCancel">Yanlışlıkla mı bastın? İptal et</span>
+  </div>
+</div>
 
 <nav class="tabbar" aria-label="Primary">
   <div class="tabbar-inner">
@@ -951,6 +1164,7 @@
     <div class="ring-status" id="ringStatus">😴 Still sleeping</div>
     <div class="ring-remaining" id="ringRemaining">Calculating…</div>
     <div class="ring-hours">8:00 AM – 12:00 AM</div>
+    <button class="sleep-toggle-btn" id="sleepGoToBedBtn" type="button">😴 Going to sleep</button>
   </div>
 </div>
 
@@ -1024,6 +1238,31 @@
     </div>
     <div class="empty-state" id="nutritionEmptyState">Nothing logged yet — send a voice note on WhatsApp about what you ate.</div>
     <ul id="nutritionList" class="goal-list gm-list"></ul>
+  </div>
+</div>
+
+<!-- HABITS -->
+<div class="section">
+  <div class="section-title">Habits</div>
+  <div class="gm-card" id="habitsCard">
+    <div class="gm-card-header">
+      <div class="gm-card-header-left">
+        <div class="gm-eyebrow">Today</div>
+        <div class="gm-progress-row">
+          <span class="gm-progress-num" id="habitsProgressNum">0</span>
+          <span class="gm-progress-total" id="habitsProgressTotal">/ 0</span>
+          <span class="gm-progress-label" id="habitsProgressLabel">no habits yet</span>
+        </div>
+      </div>
+    </div>
+    <div class="habits-grid" id="habitsGrid"></div>
+    <div class="empty-state" id="habitsEmptyState">No habits yet — add one below.</div>
+    <div class="goal-input-wrap gm-input-wrap habit-input-wrap">
+      <input class="goal-input" id="habitNameInput" type="text" placeholder="Habit name…" autocomplete="off"/>
+      <input class="goal-input habit-num-input" id="habitTargetInput" type="number" min="1" max="7" value="7" placeholder="x/week"/>
+      <input class="goal-input habit-num-input" id="habitHourInput" type="number" min="0" max="23" placeholder="Active from (hr)"/>
+      <button class="goal-add-btn" id="habitAddBtn">+ Add</button>
+    </div>
   </div>
 </div>
 
@@ -1588,6 +1827,248 @@ function loadNutrition() {
   });
 }
 
+// ─── HABITS ───────────────────────────────────────────────────────────────────
+// habits:definitions -> [{ id, name, weeklyTarget, activeFromHour, subItems?: [{id,name}] }]
+// habits:log:YYYY-MM-DD -> { [habitId]: true | { [subItemId]: true } }
+function habitDateKey(d) { return d.toISOString().slice(0, 10); }
+
+function isHabitDoneForDay(h, dateStr) {
+  const log = storeGet('habits:log:' + dateStr) || {};
+  const entry = log[h.id];
+  if (h.subItems && h.subItems.length) {
+    if (!entry || typeof entry !== 'object') return false;
+    return h.subItems.every(si => entry[si.id]);
+  }
+  return !!entry;
+}
+
+function habitWeeklyCount(h, activeDateStr) {
+  const [y, m, d] = activeDateStr.split('-').map(Number);
+  const base = new Date(y, m - 1, d);
+  let count = 0;
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(base);
+    day.setDate(day.getDate() - i);
+    if (isHabitDoneForDay(h, habitDateKey(day))) count++;
+  }
+  return count;
+}
+
+function toggleSubItem(h, subId, date, tileEl) {
+  const logNow = storeGet('habits:log:' + date) || {};
+  let entry = (logNow[h.id] && typeof logNow[h.id] === 'object') ? logNow[h.id] : {};
+  const wasComplete = h.subItems.every(si => entry[si.id]);
+  entry = Object.assign({}, entry);
+  if (entry[subId]) delete entry[subId]; else entry[subId] = true;
+  const nowComplete = h.subItems.every(si => entry[si.id]);
+  logNow[h.id] = entry;
+  storeSet('habits:log:' + date, logNow);
+
+  if (!wasComplete && nowComplete && tileEl) {
+    tileEl.classList.add('is-collapsing');
+    setTimeout(loadHabits, 480);
+  } else {
+    loadHabits();
+  }
+}
+
+function loadHabits() {
+  const date = getActiveDateString();
+  const defs = storeGet('habits:definitions') || [];
+  const nowHour = new Date().getHours();
+
+  const grid = document.getElementById('habitsGrid');
+  const emptyEl = document.getElementById('habitsEmptyState');
+  grid.innerHTML = '';
+
+  if (defs.length === 0) {
+    emptyEl.style.display = 'block';
+    document.getElementById('habitsProgressNum').textContent = '0';
+    document.getElementById('habitsProgressTotal').textContent = '/ 0';
+    document.getElementById('habitsProgressLabel').textContent = 'no habits yet';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  const activeDefs = defs.filter(h => h.activeFromHour == null || nowHour >= h.activeFromHour);
+  const doneToday = activeDefs.filter(h => isHabitDoneForDay(h, date)).length;
+
+  document.getElementById('habitsProgressNum').textContent = doneToday;
+  document.getElementById('habitsProgressTotal').textContent = '/ ' + activeDefs.length;
+  document.getElementById('habitsProgressLabel').textContent =
+    activeDefs.length > 0 && doneToday === activeDefs.length ? 'all done' : 'today';
+
+  for (const h of defs) {
+    const isActive = h.activeFromHour == null || nowHour >= h.activeFromHour;
+    const hasSubItems = h.subItems && h.subItems.length > 0;
+    const done = isHabitDoneForDay(h, date);
+    const weekCount = habitWeeklyCount(h, date);
+    const target = Math.max(1, Math.min(7, h.weeklyTarget || 7));
+
+    const tile = document.createElement('div');
+    tile.className = 'habit-tile' + (done ? ' is-done' : '') + (!isActive ? ' is-inactive' : '');
+
+    const top = document.createElement('div');
+    top.className = 'habit-tile-top';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'habit-tile-name';
+    nameEl.textContent = h.name;
+    top.appendChild(nameEl);
+
+    if (!isActive) {
+      const lock = document.createElement('span');
+      lock.className = 'habit-tile-lock';
+      lock.textContent = String(h.activeFromHour).padStart(2, '0') + ':00';
+      top.appendChild(lock);
+    } else if (!hasSubItems) {
+      const cbWrap = document.createElement('label');
+      cbWrap.className = 'goal-cb-wrap';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = done;
+      cb.addEventListener('change', () => {
+        const logNow = storeGet('habits:log:' + date) || {};
+        if (cb.checked) logNow[h.id] = true; else delete logNow[h.id];
+        storeSet('habits:log:' + date, logNow);
+        loadHabits();
+      });
+      const cbVisual = document.createElement('span');
+      cbVisual.className = 'goal-cb-visual';
+      cbWrap.appendChild(cb);
+      cbWrap.appendChild(cbVisual);
+      top.appendChild(cbWrap);
+    }
+    tile.appendChild(top);
+
+    if (isActive && hasSubItems) {
+      if (done) {
+        const summary = document.createElement('div');
+        summary.className = 'habit-tile-done-summary';
+        summary.textContent = '✓ Done';
+        tile.appendChild(summary);
+      } else {
+        const list = document.createElement('ul');
+        list.className = 'habit-subitem-list';
+        const dateLog = storeGet('habits:log:' + date) || {};
+        const entry = (dateLog[h.id] && typeof dateLog[h.id] === 'object') ? dateLog[h.id] : {};
+        for (const si of h.subItems) {
+          const li = document.createElement('li');
+          li.className = 'habit-subitem' + (entry[si.id] ? ' is-checked' : '');
+          const cbWrap = document.createElement('label');
+          cbWrap.className = 'goal-cb-wrap habit-subitem-cb';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = !!entry[si.id];
+          cb.addEventListener('change', () => toggleSubItem(h, si.id, date, tile));
+          const cbVisual = document.createElement('span');
+          cbVisual.className = 'goal-cb-visual';
+          cbWrap.appendChild(cb);
+          cbWrap.appendChild(cbVisual);
+          li.appendChild(cbWrap);
+          const txt = document.createElement('span');
+          txt.className = 'habit-subitem-text';
+          txt.textContent = si.name;
+          li.appendChild(txt);
+          list.appendChild(li);
+        }
+        tile.appendChild(list);
+      }
+    }
+
+    const bar = document.createElement('div');
+    bar.className = 'gm-bar habit-tile-bar';
+    for (let i = 0; i < target; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'gm-bar-seg' + (i < weekCount ? ' gm-bar-seg-done' : '');
+      bar.appendChild(seg);
+    }
+    tile.appendChild(bar);
+
+    const ratio = document.createElement('span');
+    ratio.className = 'habit-tile-ratio';
+    ratio.textContent = weekCount + '/' + target;
+    tile.appendChild(ratio);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'goal-delete habit-tile-del';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', () => {
+      if (!confirm('Delete habit "' + h.name + '"?')) return;
+      storeSet('habits:definitions', defs.filter(x => x.id !== h.id));
+      loadHabits();
+    });
+    tile.appendChild(delBtn);
+
+    grid.appendChild(tile);
+  }
+}
+
+document.getElementById('habitAddBtn').addEventListener('click', () => {
+  const nameInput = document.getElementById('habitNameInput');
+  const targetInput = document.getElementById('habitTargetInput');
+  const hourInput = document.getElementById('habitHourInput');
+  const name = nameInput.value.trim();
+  if (!name) return;
+  const target = Math.max(1, Math.min(7, parseInt(targetInput.value, 10) || 7));
+  const hourRaw = hourInput.value;
+  const activeFromHour = hourRaw === '' ? null : Math.max(0, Math.min(23, parseInt(hourRaw, 10)));
+  const defs = storeGet('habits:definitions') || [];
+  defs.push({
+    id: 'habit_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+    name, weeklyTarget: target, activeFromHour
+  });
+  storeSet('habits:definitions', defs);
+  nameInput.value = '';
+  targetInput.value = '7';
+  hourInput.value = '';
+  loadHabits();
+});
+
+// ─── SLEEP ────────────────────────────────────────────────────────────────────
+// sleep:state -> { status: 'awake' | 'asleep', bedtimeAt: ISOString|null }
+// sleep:log -> [{ bedtimeAt, wakeAt, minutes }]
+function checkSleepGate() {
+  const state = storeGet('sleep:state') || { status: 'awake', bedtimeAt: null };
+  const gate = document.getElementById('wakeGate');
+  if (state.status === 'asleep') {
+    if (state.bedtimeAt) {
+      document.getElementById('wakeGateBedtime').textContent = fmtClock(new Date(state.bedtimeAt));
+    }
+    gate.classList.remove('hidden');
+    gate.classList.remove('is-closing');
+  } else {
+    gate.classList.add('hidden');
+  }
+}
+
+document.getElementById('sleepGoToBedBtn').addEventListener('click', () => {
+  if (!confirm('Uykuya mı geçiyorsun? Bu, uyanana kadar dashboard\'ı tüm cihazlarda kilitler.')) return;
+  storeSet('sleep:state', { status: 'asleep', bedtimeAt: new Date().toISOString() });
+  checkSleepGate();
+});
+
+document.getElementById('wakeUpBtn').addEventListener('click', () => {
+  const state = storeGet('sleep:state') || {};
+  const bedtimeAt = state.bedtimeAt;
+  const wakeAt = new Date().toISOString();
+  if (bedtimeAt) {
+    const minutes = Math.round((new Date(wakeAt) - new Date(bedtimeAt)) / 60000);
+    const log = storeGet('sleep:log') || [];
+    log.push({ bedtimeAt, wakeAt, minutes });
+    storeSet('sleep:log', log);
+  }
+  storeSet('sleep:state', { status: 'awake', bedtimeAt: null });
+  const gate = document.getElementById('wakeGate');
+  gate.classList.add('is-closing');
+  setTimeout(() => { gate.classList.add('hidden'); gate.classList.remove('is-closing'); }, 500);
+});
+
+document.getElementById('wakeGateCancel').addEventListener('click', () => {
+  if (!confirm('Yanlış tıklama olduğunu onaylıyor musun? Uyku kaydı tutulmayacak.')) return;
+  storeSet('sleep:state', { status: 'awake', bedtimeAt: null });
+  document.getElementById('wakeGate').classList.add('hidden');
+});
+
 // ─── ADD + POLISH ─────────────────────────────────────────────────────────────
 function showStatus(el, msg, isError, ms) {
   el.textContent = msg;
@@ -1684,7 +2165,7 @@ document.getElementById('gmPushBtn').addEventListener('click', () => {
 
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 // Keeps localStorage mirrored to the `app_state` row for APP_KEY across devices.
-const SYNC_PREFIXES = ['goals:', 'nutrition:'];
+const SYNC_PREFIXES = ['goals:', 'nutrition:', 'habits:', 'sleep:'];
 const SYNC_EXACT_KEYS = ['goal_streak_v1'];
 
 function isSyncedKey(key) {
@@ -1724,6 +2205,8 @@ function refreshFromStorage() {
   loadToday();
   loadTomorrow();
   loadNutrition();
+  loadHabits();
+  checkSleepGate();
   window.dispatchEvent(new CustomEvent('goals-changed'));
 }
 
@@ -1838,12 +2321,15 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   loadToday();
   loadTomorrow();
   loadNutrition();
+  loadHabits();
+  checkSleepGate();
   makeAddHandlers('goalInput', 'goalAddBtn', 'goalPolishBtn',
     'goals:' + getActiveDateString(), 'polishStatus', loadToday);
   makeAddHandlers('tomorrowInput', 'tomorrowAddBtn', 'tomorrowPolishBtn',
     'goals:' + getTomorrowDateString(), 'tomorrowStatus', loadTomorrow);
   updateDayBar();
   setInterval(updateDayBar, 60 * 1000);
+  setInterval(loadHabits, 60 * 1000);
   startTicker();
 })();
 </script>
