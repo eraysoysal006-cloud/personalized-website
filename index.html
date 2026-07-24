@@ -2053,11 +2053,6 @@ function loadHabits() {
     }
     tile.appendChild(bar);
 
-    const ratio = document.createElement('span');
-    ratio.className = 'habit-tile-ratio';
-    ratio.textContent = weekCount + '/' + target;
-    tile.appendChild(ratio);
-
     const delBtn = document.createElement('button');
     delBtn.className = 'goal-delete habit-tile-del';
     delBtn.textContent = '×';
