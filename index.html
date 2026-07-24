@@ -1095,8 +1095,8 @@
 
 <div class="wake-gate hidden" id="wakeGate">
   <div class="wake-gate-inner">
-    <div class="wake-gate-emoji">🌙</div>
-    <div class="wake-gate-text">Sleeping since <span id="wakeGateBedtime">--:--</span></div>
+    <div class="wake-gate-emoji" id="wakeGateEmoji">🌙</div>
+    <div class="wake-gate-text" id="wakeGateText">Sleeping…</div>
     <button class="wake-gate-btn" id="wakeUpBtn" type="button">☀️ Uyandım</button>
     <span class="wake-gate-cancel" id="wakeGateCancel">Yanlışlıkla mı bastın? İptal et</span>
   </div>
@@ -2031,9 +2031,11 @@ function checkSleepGate() {
   const state = storeGet('sleep:state') || { status: 'awake', bedtimeAt: null };
   const gate = document.getElementById('wakeGate');
   if (state.status === 'asleep') {
-    if (state.bedtimeAt) {
-      document.getElementById('wakeGateBedtime').textContent = fmtClock(new Date(state.bedtimeAt));
-    }
+    document.getElementById('wakeGateEmoji').textContent = '🌙';
+    document.getElementById('wakeGateText').textContent =
+      state.bedtimeAt ? 'Sleeping since ' + fmtClock(new Date(state.bedtimeAt)) : 'Sleeping…';
+    document.getElementById('wakeUpBtn').style.display = '';
+    document.getElementById('wakeGateCancel').style.display = '';
     gate.classList.remove('hidden');
     gate.classList.remove('is-closing');
   } else {
@@ -2051,16 +2053,30 @@ document.getElementById('wakeUpBtn').addEventListener('click', () => {
   const state = storeGet('sleep:state') || {};
   const bedtimeAt = state.bedtimeAt;
   const wakeAt = new Date().toISOString();
+  let minutes = null;
   if (bedtimeAt) {
-    const minutes = Math.round((new Date(wakeAt) - new Date(bedtimeAt)) / 60000);
+    minutes = Math.round((new Date(wakeAt) - new Date(bedtimeAt)) / 60000);
     const log = storeGet('sleep:log') || [];
     log.push({ bedtimeAt, wakeAt, minutes });
     storeSet('sleep:log', log);
   }
   storeSet('sleep:state', { status: 'awake', bedtimeAt: null });
+
   const gate = document.getElementById('wakeGate');
-  gate.classList.add('is-closing');
-  setTimeout(() => { gate.classList.add('hidden'); gate.classList.remove('is-closing'); }, 500);
+  if (minutes != null) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    document.getElementById('wakeGateEmoji').textContent = '☀️';
+    document.getElementById('wakeGateText').textContent =
+      h > 0 ? `You slept for ${h}h ${m}m` : `You slept for ${m}m`;
+  }
+  document.getElementById('wakeUpBtn').style.display = 'none';
+  document.getElementById('wakeGateCancel').style.display = 'none';
+
+  setTimeout(() => {
+    gate.classList.add('is-closing');
+    setTimeout(() => { gate.classList.add('hidden'); gate.classList.remove('is-closing'); }, 500);
+  }, 2600);
 });
 
 document.getElementById('wakeGateCancel').addEventListener('click', () => {
