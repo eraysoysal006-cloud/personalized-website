@@ -1094,8 +1094,11 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
+    min-width: 0;
   }
+  .habit-tile-top > * { min-width: 0; }
 
   .habit-tile-name {
     font-size: 13px;
@@ -1346,6 +1349,8 @@
 
     .finance-donut-wrap { width: 128px; height: 128px; }
     .finance-donut-amount { font-size: 18px; }
+
+    .habits-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
