@@ -1069,40 +1069,6 @@
   }
 
   /* HABITS */
-  .habit-heatmap-wrap {
-    margin: 10px 0 14px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-  .habit-heatmap {
-    display: grid;
-    grid-template-rows: repeat(7, 1fr);
-    grid-auto-flow: column;
-    grid-auto-columns: 11px;
-    gap: 3px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-  .habit-heat-cell {
-    width: 11px;
-    height: 11px;
-    border-radius: 3px;
-    background: rgba(255,255,255,0.05);
-    flex-shrink: 0;
-  }
-  .habit-heat-cell.is-today {
-    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.35);
-  }
-  .habit-heatmap-label {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-    margin-top: 6px;
-  }
-
   .habits-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
@@ -1627,10 +1593,6 @@
           <span class="gm-progress-label" id="habitsProgressLabel">no habits yet</span>
         </div>
       </div>
-    </div>
-    <div class="habit-heatmap-wrap" id="habitHeatmapWrap">
-      <div class="habit-heatmap" id="habitHeatmap"></div>
-      <div class="habit-heatmap-label">last 12 weeks</div>
     </div>
     <div class="habits-grid" id="habitsGrid"></div>
     <div class="empty-state" id="habitsEmptyState">No habits yet — add one below.</div>
@@ -2220,56 +2182,10 @@ function toggleSubItem(h, subId, date, tileEl) {
   }
 }
 
-// Last-N-weeks GitHub-style consistency grid — one cell per day, colored by
-// what fraction of all current habit definitions were done that day.
-function habitHeatmapCells(defs, weeks) {
-  const todayStr = getActiveDateString();
-  const [ty, tm, td] = todayStr.split('-').map(Number);
-  const today = new Date(ty, tm - 1, td);
-  const start = new Date(today);
-  start.setDate(start.getDate() - (weeks * 7 - 1));
-  start.setDate(start.getDate() - start.getDay()); // pad back to the preceding Sunday
-
-  const cells = [];
-  const cur = new Date(start);
-  while (cur <= today) {
-    const key = toDateKey(cur);
-    let done = 0;
-    for (const h of defs) { if (isHabitDoneForDay(h, key)) done++; }
-    cells.push({ date: key, frac: defs.length ? done / defs.length : 0, isToday: key === todayStr });
-    cur.setDate(cur.getDate() + 1);
-  }
-  return cells;
-}
-
-function habitHeatColor(frac) {
-  if (frac <= 0) return 'rgba(255,255,255,0.05)';
-  if (frac < 0.34) return 'rgba(92,127,234,0.28)';
-  if (frac < 0.67) return 'rgba(92,127,234,0.55)';
-  if (frac < 1) return 'rgba(92,127,234,0.8)';
-  return '#5C7FEA';
-}
-
-function renderHabitHeatmap(defs) {
-  const wrap = document.getElementById('habitHeatmapWrap');
-  if (!defs.length) { wrap.classList.add('hidden'); return; }
-  wrap.classList.remove('hidden');
-  const el = document.getElementById('habitHeatmap');
-  el.innerHTML = '';
-  for (const c of habitHeatmapCells(defs, 12)) {
-    const cell = document.createElement('div');
-    cell.className = 'habit-heat-cell' + (c.isToday ? ' is-today' : '');
-    cell.style.background = habitHeatColor(c.frac);
-    cell.title = c.date + ' — ' + Math.round(c.frac * 100) + '%';
-    el.appendChild(cell);
-  }
-}
-
 function loadHabits() {
   const date = getActiveDateString();
   const defs = storeGet('habits:definitions') || [];
   const nowHour = getActiveHour();
-  renderHabitHeatmap(defs);
 
   const grid = document.getElementById('habitsGrid');
   const emptyEl = document.getElementById('habitsEmptyState');
