@@ -20,10 +20,14 @@ const CONFIG = {
   // Weight unit shown everywhere. "kg" or "lb".
   units: "kg",
 
+  // Date you started training — shown as a running day-count badge at
+  // the top of the page for motivation. Format YYYY-MM-DD.
+  startDate: "2024-10-03",
+
   // Gyms you train at. Add as many as you want.
   // `id` must be a short unique slug (no spaces). `name` is what people see.
   gyms: [
-    { id: "home",  name: "Home Gym" }
+    { id: "gym",  name: "Gym" }
   ],
 
   // Training split: Upper/Lower, 3 sessions a week (2x Upper, 1x Lower).
@@ -76,15 +80,15 @@ const CONFIG = {
   // First-run defaults. Once a user logs anything, they edit through
   // the in-app + / gear buttons; this block stays as the seed.
   defaultExercises: [
-    { name: "Bench press",     gym: "home", day: "upper", repMin: 5, repMax: 8,  step: 2.5, startWeight: 60 },
-    { name: "Overhead press",  gym: "home", day: "upper", repMin: 5, repMax: 8,  step: 2.5, startWeight: 35 },
-    { name: "Tricep pushdown", gym: "home", day: "upper", repMin: 8, repMax: 12, step: 2.5, startWeight: 25 },
-    { name: "Pull-ups",        gym: "home", day: "upper", repMin: 5, repMax: 10, step: 1,   startWeight: 0, bw: true },
-    { name: "Barbell row",     gym: "home", day: "upper", repMin: 6, repMax: 10, step: 2.5, startWeight: 50 },
-    { name: "Bicep curl",      gym: "home", day: "upper", repMin: 8, repMax: 12, step: 1.25,startWeight: 15 },
-    { name: "Back squat",      gym: "home", day: "lower", repMin: 5, repMax: 8,  step: 5,   startWeight: 80 },
-    { name: "Romanian deadlift", gym: "home", day: "lower", repMin: 6, repMax: 10, step: 5, startWeight: 60 },
-    { name: "Leg press",       gym: "home", day: "lower", repMin: 8, repMax: 12, step: 5,   startWeight: 100 }
+    { name: "Bench press",     gym: "gym", day: "upper", repMin: 5, repMax: 8,  step: 2.5, startWeight: 60 },
+    { name: "Overhead press",  gym: "gym", day: "upper", repMin: 5, repMax: 8,  step: 2.5, startWeight: 35 },
+    { name: "Tricep pushdown", gym: "gym", day: "upper", repMin: 8, repMax: 12, step: 2.5, startWeight: 25 },
+    { name: "Pull-ups",        gym: "gym", day: "upper", repMin: 5, repMax: 10, step: 1,   startWeight: 0, bw: true },
+    { name: "Barbell row",     gym: "gym", day: "upper", repMin: 6, repMax: 10, step: 2.5, startWeight: 50 },
+    { name: "Bicep curl",      gym: "gym", day: "upper", repMin: 8, repMax: 12, step: 1.25,startWeight: 15 },
+    { name: "Back squat",      gym: "gym", day: "lower", repMin: 5, repMax: 8,  step: 5,   startWeight: 80 },
+    { name: "Romanian deadlift", gym: "gym", day: "lower", repMin: 6, repMax: 10, step: 5, startWeight: 60 },
+    { name: "Leg press",       gym: "gym", day: "lower", repMin: 8, repMax: 12, step: 5,   startWeight: 100 }
   ]
 };
 </script>
@@ -214,6 +218,23 @@ img, video, canvas, svg { max-width: 100%; }
 .po-day-sep { color: var(--text-4); }
 .po-day-split { color: var(--good); font-weight: 800; }
 .po-day-split.is-rest { color: #7DD3FC; }
+
+.po-journey-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px;
+  background: rgba(110,231,183,0.08);
+  border: 1px solid rgba(110,231,183,0.18);
+  border-radius: 999px;
+  margin-bottom: 10px; margin-left: 8px;
+}
+.po-journey-num {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 800;
+  color: var(--good); font-variant-numeric: tabular-nums;
+}
+.po-journey-label {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-3);
+}
 
 .po-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -1288,6 +1309,10 @@ img, video, canvas, svg { max-width: 100%; }
     <span class="po-day-sep">·</span>
     <span class="po-day-split" id="dayPillSplit">—</span>
   </button>
+  <div class="po-journey-badge" id="journeyBadge" title="Days since you started training">
+    <span class="po-journey-num" id="journeyNum">—</span>
+    <span class="po-journey-label">days training</span>
+  </div>
 
   <!-- WEIGHT + PROGRESS PHOTOS -->
   <div class="wt-section">
@@ -2037,6 +2062,20 @@ img, video, canvas, svg { max-width: 100%; }
     const splitEl = $('dayPillSplit');
     splitEl.textContent = splitLabel(split.name);
     splitEl.classList.toggle('is-rest', isRestName(split.name));
+    renderJourneyBadge();
+  }
+
+  // Motivational day-count since CONFIG.startDate.
+  function renderJourneyBadge() {
+    const el = $('journeyNum');
+    if (!el) return;
+    if (!CONFIG.startDate) { $('journeyBadge').style.display = 'none'; return; }
+    const [y, m, d] = CONFIG.startDate.split('-').map(Number);
+    const start = new Date(y, m - 1, d);
+    const today = new Date();
+    start.setHours(0,0,0,0); today.setHours(0,0,0,0);
+    const days = Math.floor((today - start) / 86400000) + 1;
+    el.textContent = days.toLocaleString();
   }
 
   // Build the rep buttons based on the current exercise's repMin/repMax.
