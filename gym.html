@@ -456,6 +456,63 @@ img, video, canvas, svg { max-width: 100%; }
 .po-btn-primary:active { transform: translateY(0) scale(0.98); }
 .po-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
+/* ----- Rest timer ----- */
+.po-rest-timer {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.po-rest-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.po-rest-time {
+  font-family: var(--font-mono); font-size: 22px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--good);
+  flex-shrink: 0;
+}
+.po-rest-actions { display: flex; gap: 6px; margin-left: auto; }
+.po-rest-btn {
+  padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-2);
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.po-rest-btn:hover { background: rgba(255,255,255,0.09); color: var(--text-1); }
+.po-rest-skip { color: var(--bad); border-color: rgba(248,113,113,0.25); }
+
+/* ----- PR toast ----- */
+.po-pr-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 16px) + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-24px);
+  background: linear-gradient(180deg, #7B9BF5 0%, #5C7FEA 100%);
+  color: #08090B;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  white-space: nowrap;
+}
+.po-pr-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .po-btn-secondary {
   padding: 12px 18px;
   border: 1px solid var(--border);
@@ -1281,6 +1338,8 @@ img, video, canvas, svg { max-width: 100%; }
 </head>
 <body>
 
+<div class="po-pr-toast" id="prToast">🎉 New PR — <span id="prToastName"></span></div>
+
 <nav class="tabbar" aria-label="Primary">
   <div class="tabbar-inner">
     <a class="tab" href="index.html">
@@ -1536,6 +1595,15 @@ img, video, canvas, svg { max-width: 100%; }
         </div>
       </div>
       <button class="po-btn-primary" id="logBtn">Log set</button>
+      <div class="po-rest-timer hidden" id="restTimer">
+        <div class="po-rest-label">REST</div>
+        <div class="po-rest-time" id="restTimeDisplay">01:30</div>
+        <div class="po-rest-actions">
+          <button type="button" class="po-rest-btn" id="restMinus15">−15s</button>
+          <button type="button" class="po-rest-btn" id="restPlus15">+15s</button>
+          <button type="button" class="po-rest-btn po-rest-skip" id="restSkip">Skip</button>
+        </div>
+      </div>
     </div>
 
     <!-- Prescription -->
@@ -2259,6 +2327,62 @@ img, video, canvas, svg { max-width: 100%; }
     }).join('');
   }
 
+  // ============================================================
+  // REST TIMER — starts automatically after logging a set.
+  // ============================================================
+  const REST_DEFAULT_SECONDS = 90;
+  let restInterval = null;
+  let restRemaining = 0;
+
+  function fmtRestTime(s) {
+    s = Math.max(0, s);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+  }
+  function updateRestDisplay() {
+    $('restTimeDisplay').textContent = fmtRestTime(restRemaining);
+  }
+  function startRestTimer(seconds) {
+    clearInterval(restInterval);
+    restRemaining = seconds;
+    $('restTimer').classList.remove('hidden');
+    updateRestDisplay();
+    restInterval = setInterval(() => {
+      restRemaining--;
+      if (restRemaining <= 0) {
+        clearInterval(restInterval);
+        restRemaining = 0;
+        updateRestDisplay();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        setTimeout(() => $('restTimer').classList.add('hidden'), 3000);
+        return;
+      }
+      updateRestDisplay();
+    }, 1000);
+  }
+  function stopRestTimer() {
+    clearInterval(restInterval);
+    $('restTimer').classList.add('hidden');
+  }
+  $('restSkip').addEventListener('click', stopRestTimer);
+  $('restMinus15').addEventListener('click', () => { restRemaining = Math.max(0, restRemaining - 15); updateRestDisplay(); });
+  $('restPlus15').addEventListener('click', () => { restRemaining += 15; updateRestDisplay(); });
+
+  // ============================================================
+  // PR CELEBRATION — brief toast when a logged set beats the exercise's
+  // previous best (by estimated 1RM, or reps for bodyweight moves).
+  // ============================================================
+  let prToastTimer = null;
+  function showPRCelebration(name) {
+    const el = $('prToast');
+    $('prToastName').textContent = name;
+    el.classList.add('show');
+    if (navigator.vibrate) navigator.vibrate(100);
+    clearTimeout(prToastTimer);
+    prToastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
   $('poTwDoneBtn').addEventListener('click', () => {
     const todayKey = wtDateKey(new Date());
     if (doneDays[todayKey]) {
@@ -2328,7 +2452,14 @@ img, video, canvas, svg { max-width: 100%; }
     if (reps <= 0) { alert('Pick a rep count.'); return; }
     const w = ex.bw ? 0 : (parseFloat($('weightInput').value) || 0);
     if (!ex.bw && w <= 0) { alert('Enter a weight.'); return; }
+
     const arr = state.logs[ex.id] || [];
+    const priorBest = arr.length
+      ? Math.max.apply(null, arr.map(l => ex.bw ? l.reps : estimate1RM(l.weight, l.reps)))
+      : -Infinity;
+    const newVal = ex.bw ? reps : estimate1RM(w, reps);
+    const isPR = arr.length > 0 && newVal > priorBest;
+
     arr.push({ weight: w, reps: reps, date: new Date().toISOString() });
     state.logs[ex.id] = arr;
     saveState(); renderAll();
@@ -2339,6 +2470,9 @@ img, video, canvas, svg { max-width: 100%; }
     btn.style.transition = 'transform 0.15s';
     btn.style.transform = 'scale(0.96)';
     setTimeout(() => { btn.style.transform = ''; }, 160);
+
+    if (isPR) showPRCelebration(ex.name);
+    startRestTimer(REST_DEFAULT_SECONDS);
   });
 
   // ============================================================
