@@ -2280,8 +2280,11 @@ const FINANCE_CATEGORIES = {
   'Para Çekme': { color: '#94A3B8', keys: ['atm','withdrawal','nakit','cash','prelievo'] },
   'Diğer': { color: '#64748B', keys: [] }
 };
-function financeCategorize(desc) {
+function financeCategorize(desc, amount) {
   const d = (desc || '').toLowerCase();
+  // "cxroma" only means rent when it's a real rent-sized payment, not a small
+  // incidental charge from the same merchant code.
+  if (d.includes('cxroma')) return (amount != null && amount < 100) ? 'Diğer' : 'Kira';
   for (const [cat, info] of Object.entries(FINANCE_CATEGORIES)) {
     if (info.keys.some(k => d.includes(k))) return cat;
   }
@@ -2462,7 +2465,7 @@ function financeImportCSV(text, accId, msgEl) {
     const amount = Math.abs(amt), isInc = amt > 0;
     if (db.txns.some(x => x.accountId === accId && x.date === date && x.desc === desc && x.amount === amount && !!x.income === isInc)) { dup++; return; }
     const t = { id: financeUid(), accountId: accId, date, desc, amount, cur: acc.cur };
-    if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc); spend++; }
+    if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc, amount); spend++; }
     db.txns.push(t);
   });
   financeSave(db);
@@ -2522,7 +2525,7 @@ async function financeImportAI(dataUrl, mimeType, accId, msgEl) {
       const isInc = item.type === 'income';
       if (db.txns.some(x => x.accountId === accId && x.date === date && x.desc === desc && x.amount === amount && !!x.income === isInc)) { dup++; return; }
       const t = { id: financeUid(), accountId: accId, date, desc, amount, cur: acc.cur };
-      if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc); spend++; }
+      if (isInc) { t.income = true; inc++; } else { t.category = financeCategorize(desc, amount); spend++; }
       db.txns.push(t);
     });
     financeSave(db);
