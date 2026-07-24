@@ -353,6 +353,30 @@
   /* SECTION */
   .section { margin-bottom: 18px; }
 
+  /* DASHBOARD GRID (desktop gets multi-column; mobile stays single-column) */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas: "todo" "habits" "nutrition" "finance";
+    gap: 18px;
+  }
+  .dash-grid > .section { margin-bottom: 0; }
+  #financeSection   { grid-area: finance; }
+  #todoSection      { grid-area: todo; }
+  #nutritionSection { grid-area: nutrition; }
+  #habitsSection    { grid-area: habits; }
+
+  @media (min-width: 960px) {
+    body { max-width: 1280px; }
+    .dash-grid {
+      grid-template-columns: 1fr 1.4fr 1fr;
+      grid-template-areas:
+        "finance todo habits"
+        "finance todo nutrition";
+      align-items: start;
+    }
+  }
+
   .section-title {
     font-size: 10.5px;
     font-weight: 700;
@@ -1182,8 +1206,10 @@
   </div>
 </div>
 
+<div class="dash-grid">
+
 <!-- FINANCE -->
-<div class="section">
+<div class="section" id="financeSection">
   <div class="section-title">Finance</div>
   <div class="gm-card" id="financeCard">
     <div class="gm-card-header">
@@ -1253,7 +1279,7 @@
 </div>
 
 <!-- TO DO LIST -->
-<div class="section">
+<div class="section" id="todoSection">
   <div class="section-title">To Do List</div>
 
   <!-- TODAY CARD -->
@@ -1306,7 +1332,7 @@
 </div>
 
 <!-- NUTRITION -->
-<div class="section">
+<div class="section" id="nutritionSection">
   <div class="section-title">Nutrition</div>
   <div class="gm-card" id="nutritionCard">
     <div class="gm-card-header">
@@ -1326,7 +1352,7 @@
 </div>
 
 <!-- HABITS -->
-<div class="section">
+<div class="section" id="habitsSection">
   <div class="section-title">Habits</div>
   <div class="gm-card" id="habitsCard">
     <div class="gm-card-header">
@@ -1349,6 +1375,8 @@
     </div>
   </div>
 </div>
+
+</div><!-- /.dash-grid -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
