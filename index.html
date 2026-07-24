@@ -1635,6 +1635,14 @@ function getActiveDateString() {
   return toDateKey(now);
 }
 
+// Clock hour, but hours 0-5 count as a continuation of the previous
+// active day (matches getActiveDateString's 6 AM day boundary) so a habit
+// that unlocked in the evening doesn't re-lock itself right at midnight.
+function getActiveHour() {
+  const h = new Date().getHours();
+  return h < 6 ? h + 24 : h;
+}
+
 function getTomorrowDateString() {
   const now = new Date();
   if (now.getHours() < 6) return toDateKey(now);
@@ -2134,7 +2142,7 @@ function toggleSubItem(h, subId, date, tileEl) {
 function loadHabits() {
   const date = getActiveDateString();
   const defs = storeGet('habits:definitions') || [];
-  const nowHour = new Date().getHours();
+  const nowHour = getActiveHour();
 
   const grid = document.getElementById('habitsGrid');
   const emptyEl = document.getElementById('habitsEmptyState');
