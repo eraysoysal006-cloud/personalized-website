@@ -383,8 +383,10 @@ Goals:
 ${lines}
 
 NUTRITION LOGGING: if (and only if) the user's message describes something they ate or drank, estimate its nutrition and append exactly one line at the very end of your reply, on its own line, in this exact machine-readable format (the app parses and hides this line from the user, so it must match exactly):
-NUTRITION_LOG: {"text":"short description","calories":number,"protein":number,"carbs":number,"fat":number}
-Use your best real-world estimate for a typical portion if they don't give exact amounts. Do not add this line for messages that aren't about food/drink. Never mention this tag to the user or explain that you're logging anything in a technical way — just respond naturally about their meal (e.g. confirm what you logged) and let the tag do its job silently.`;
+NUTRITION_LOG: {"text":"short description","calories":number,"protein":number,"carbs":number,"fat":number,"fiber":number}
+Use your best real-world estimate for a typical portion if they don't give exact amounts — NEVER ask a clarifying question about quantity, ingredients, or preparation first. Estimate and log immediately, every time. Do not add this line for messages that aren't about food/drink. Never mention this tag to the user or explain that you're logging anything in a technical way.
+
+IMPORTANT — this is a quick logging tool, not a conversation the user wants to have: keep replies to one short sentence (a few words is fine, e.g. "Logged — ~420 kcal."). Never ask follow-up questions unless the user explicitly asks you something. Don't chit-chat, don't add extra commentary or encouragement unless asked. Every reply costs the user real money, so be as brief as possible while still being useful.`;
 }
 
 // ─── CHAT STATE ───────────────────────────────────────────────────────────────
@@ -429,7 +431,7 @@ async function callClaude() {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
-      max_tokens: 1024,
+      max_tokens: 300,
       system: buildSystemPrompt(),
       messages: messages.map(m => ({ role: m.role, content: m.content }))
     })

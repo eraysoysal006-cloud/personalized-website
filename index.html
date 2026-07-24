@@ -1550,6 +1550,7 @@
           <div class="macro-stat"><span class="macro-value" id="macroProtein">0g</span><span class="macro-label">protein</span></div>
           <div class="macro-stat"><span class="macro-value" id="macroCarbs">0g</span><span class="macro-label">carbs</span></div>
           <div class="macro-stat"><span class="macro-value" id="macroFat">0g</span><span class="macro-label">fat</span></div>
+          <div class="macro-stat"><span class="macro-value" id="macroFiber">0g</span><span class="macro-label">fiber</span></div>
         </div>
       </div>
     </div>
@@ -2019,13 +2020,15 @@ function loadNutrition() {
     acc.protein += Number(e.protein) || 0;
     acc.carbs += Number(e.carbs) || 0;
     acc.fat += Number(e.fat) || 0;
+    acc.fiber += Number(e.fiber) || 0;
     return acc;
-  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
   document.getElementById('macroCalories').textContent = Math.round(totals.calories);
   document.getElementById('macroProtein').textContent = Math.round(totals.protein) + 'g';
   document.getElementById('macroCarbs').textContent = Math.round(totals.carbs) + 'g';
   document.getElementById('macroFat').textContent = Math.round(totals.fat) + 'g';
+  document.getElementById('macroFiber').textContent = Math.round(totals.fiber) + 'g';
 
   const listEl = document.getElementById('nutritionList');
   const emptyEl = document.getElementById('nutritionEmptyState');
@@ -2048,7 +2051,7 @@ function loadNutrition() {
 
     const macrosEl = document.createElement('span');
     macrosEl.className = 'nutrition-item-macros';
-    macrosEl.textContent = `${Math.round(e.calories || 0)} kcal · ${Math.round(e.protein || 0)}p · ${Math.round(e.carbs || 0)}c · ${Math.round(e.fat || 0)}f`;
+    macrosEl.textContent = `${Math.round(e.calories || 0)} kcal · ${Math.round(e.protein || 0)}p · ${Math.round(e.carbs || 0)}c · ${Math.round(e.fat || 0)}f · ${Math.round(e.fiber || 0)}lif`;
     li.appendChild(macrosEl);
 
     const delBtn = document.createElement('button');
