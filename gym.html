@@ -52,11 +52,6 @@ const CONFIG = {
     splitId: "upper"
   },
 
-  // Progression rule: hit this many reps on the top set → coach tells you
-  // to add weight next session. Lower this to be more aggressive (e.g. 6),
-  // raise it for more volume bias (e.g. 10).
-  upgradeAtReps: 8,
-
   // Composition estimate (optional, for the weight chart).
   // Estimates how much of recent weight change is muscle vs fat by
   // cross-referencing the strength trend. Set yearsTraining to scale
@@ -1815,16 +1810,14 @@ img, video, canvas, svg { max-width: 100%; }
   function getLogs() { return (state.logs[state.currentEx] || []).slice(); }
 
   // Prescription engine — "what should I do next session?"
-  // Upgrade trigger: hits CONFIG.upgradeAtReps (default 8) OR the
-  // exercise's repMax, whichever fires first. So a 5-8 lifter hits
-  // upgrade at 8; a 6-12 lifter ALSO hits it at 8 instead of grinding
-  // out 12 reps before adding weight.
+  // Upgrade trigger: hits this exercise's own Reps Max. Simple and
+  // matches what the field is labeled — no hidden global override.
   function getRx(ex, logs) {
     if (!logs.length) return null;
     const last = logs[logs.length - 1];
     const { weight, reps } = last;
     const { repMin, repMax, step, bw } = ex;
-    const upgradeAt = Math.min(CONFIG.upgradeAtReps || 8, repMax);
+    const upgradeAt = repMax;
     let stuck = 0;
     for (let i = logs.length - 1; i >= 0; i--) {
       if (logs[i].weight === weight) stuck++; else break;
