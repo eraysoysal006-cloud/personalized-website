@@ -2541,11 +2541,16 @@ async function pushNow() {
   const state = snapshotSyncedState();
   const json = JSON.stringify(state);
   if (json === lastSyncedJson) return;
-  lastSyncedJson = json;
   try {
+    // Merge onto the current remote row instead of overwriting it outright —
+    // otherwise a stale tab pushing its own (older/incomplete) snapshot can
+    // silently wipe keys that only exist server-side (e.g. seeded directly).
+    const { data: row } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+    const merged = Object.assign({}, (row && row.data) || {}, state);
     const { error } = await sb.from('app_state')
-      .upsert({ key: APP_KEY, data: state, updated_at: new Date().toISOString() });
+      .upsert({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() });
     if (error) console.error('Sync push error:', error);
+    else lastSyncedJson = json;
   } catch (e) { console.error('Sync push failed:', e); }
 }
 
@@ -2610,17 +2615,30 @@ function flushSync() {
   if (json === lastSyncedJson) return;
   lastSyncedJson = json;
   try {
-    fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
-      method: 'POST',
-      keepalive: true,
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({ key: APP_KEY, data: state, updated_at: new Date().toISOString() })
-    });
+    // Merge onto current remote data (same reasoning as pushNow) so a
+    // backgrounded/closing tab can't clobber keys it doesn't know about.
+    fetch(`${SUPABASE_URL}/rest/v1/app_state?key=eq.${APP_KEY}&select=data`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      keepalive: true
+    })
+      .then(r => r.json())
+      .catch(() => [])
+      .then(rows => {
+        const remote = (rows && rows[0] && rows[0].data) || {};
+        const merged = Object.assign({}, remote, state);
+        return fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() })
+        });
+      })
+      .catch(() => {});
   } catch (e) { console.error('Sync flush failed:', e); }
 }
 
