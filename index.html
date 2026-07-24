@@ -1004,6 +1004,15 @@
   .habit-subitem-label:hover,
   .habit-subitem-label:active { background: rgba(255,255,255,0.05); }
 
+  .habit-subitem-locked-row {
+    justify-content: space-between;
+    cursor: default;
+    opacity: 0.5;
+  }
+  .habit-subitem-locked-row:hover { background: none; }
+
+  .habit-tile-top-label { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
   .habit-subitem-cb .goal-cb-visual {
     width: 19px;
     height: 19px;
@@ -1930,20 +1939,25 @@ function loadHabits() {
     const tile = document.createElement('div');
     tile.className = 'habit-tile' + (done ? ' is-done' : '') + (!isActive ? ' is-inactive' : '');
 
-    const top = document.createElement('div');
-    top.className = 'habit-tile-top';
     const nameEl = document.createElement('span');
     nameEl.className = 'habit-tile-name';
     nameEl.textContent = h.name;
-    top.appendChild(nameEl);
 
+    let top;
     if (!isActive) {
+      top = document.createElement('div');
+      top.className = 'habit-tile-top';
+      top.appendChild(nameEl);
       const lock = document.createElement('span');
       lock.className = 'habit-tile-lock';
       lock.textContent = String(h.activeFromHour).padStart(2, '0') + ':00';
       top.appendChild(lock);
     } else if (!hasSubItems) {
-      const cbWrap = document.createElement('label');
+      // Whole header row is a label so tapping the name also toggles it.
+      top = document.createElement('label');
+      top.className = 'habit-tile-top habit-tile-top-label';
+      top.appendChild(nameEl);
+      const cbWrap = document.createElement('span');
       cbWrap.className = 'goal-cb-wrap';
       const cb = document.createElement('input');
       cb.type = 'checkbox';
@@ -1959,8 +1973,19 @@ function loadHabits() {
       cbWrap.appendChild(cb);
       cbWrap.appendChild(cbVisual);
       top.appendChild(cbWrap);
+    } else {
+      top = document.createElement('div');
+      top.className = 'habit-tile-top';
+      top.appendChild(nameEl);
     }
     tile.appendChild(top);
+
+    if (!hasSubItems && isActive && done) {
+      const doneText = document.createElement('div');
+      doneText.className = 'habit-tile-done-summary';
+      doneText.textContent = '✓ Done';
+      tile.appendChild(doneText);
+    }
 
     if (isActive && hasSubItems) {
       if (done) {
@@ -1974,30 +1999,45 @@ function loadHabits() {
         const dateLog = storeGet('habits:log:' + date) || {};
         const entry = (dateLog[h.id] && typeof dateLog[h.id] === 'object') ? dateLog[h.id] : {};
         for (const si of h.subItems) {
+          const unlocked = si.unlockHour == null || nowHour >= si.unlockHour;
           const li = document.createElement('li');
-          li.className = 'habit-subitem' + (entry[si.id] ? ' is-checked' : '');
+          li.className = 'habit-subitem' + (entry[si.id] ? ' is-checked' : '') + (!unlocked ? ' is-locked' : '');
 
-          const label = document.createElement('label');
-          label.className = 'habit-subitem-label';
+          if (unlocked) {
+            const label = document.createElement('label');
+            label.className = 'habit-subitem-label';
 
-          const cbWrap = document.createElement('span');
-          cbWrap.className = 'goal-cb-wrap habit-subitem-cb';
-          const cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.checked = !!entry[si.id];
-          cb.addEventListener('change', () => toggleSubItem(h, si.id, date, tile));
-          const cbVisual = document.createElement('span');
-          cbVisual.className = 'goal-cb-visual';
-          cbWrap.appendChild(cb);
-          cbWrap.appendChild(cbVisual);
-          label.appendChild(cbWrap);
+            const cbWrap = document.createElement('span');
+            cbWrap.className = 'goal-cb-wrap habit-subitem-cb';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = !!entry[si.id];
+            cb.addEventListener('change', () => toggleSubItem(h, si.id, date, tile));
+            const cbVisual = document.createElement('span');
+            cbVisual.className = 'goal-cb-visual';
+            cbWrap.appendChild(cb);
+            cbWrap.appendChild(cbVisual);
+            label.appendChild(cbWrap);
 
-          const txt = document.createElement('span');
-          txt.className = 'habit-subitem-text';
-          txt.textContent = si.name;
-          label.appendChild(txt);
+            const txt = document.createElement('span');
+            txt.className = 'habit-subitem-text';
+            txt.textContent = si.name;
+            label.appendChild(txt);
 
-          li.appendChild(label);
+            li.appendChild(label);
+          } else {
+            const row = document.createElement('div');
+            row.className = 'habit-subitem-label habit-subitem-locked-row';
+            const txt = document.createElement('span');
+            txt.className = 'habit-subitem-text';
+            txt.textContent = si.name;
+            row.appendChild(txt);
+            const lockBadge = document.createElement('span');
+            lockBadge.className = 'habit-tile-lock';
+            lockBadge.textContent = String(si.unlockHour).padStart(2, '0') + ':00';
+            row.appendChild(lockBadge);
+            li.appendChild(row);
+          }
           list.appendChild(li);
         }
         tile.appendChild(list);
