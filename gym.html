@@ -1798,7 +1798,8 @@ img, video, canvas, svg { max-width: 100%; }
   function roundToStep(v, s) { return Math.round(v / s) * s; }
   function getFiltered() {
     return state.exercises.filter(e =>
-      (e.gym === state.filterGym || e.gym === 'both') && e.day === state.filterDay);
+      (e.gym === state.filterGym || e.gym === 'both') &&
+      (e.day === state.filterDay || e.day === 'both'));
   }
   function getCurrentEx() {
     const f = getFiltered();
@@ -2354,7 +2355,9 @@ img, video, canvas, svg { max-width: 100%; }
     document.getElementById('exGymSeg').closest('.po-field').style.display = state.gyms.length > 1 ? '' : 'none';
     $('exDaySeg').innerHTML = state.days.map(d =>
       '<button data-day="' + d.id + '" class="' + (modalDay === d.id ? 'active' : '') + '">' + escape(d.name) + '</button>'
-    ).join('');
+    ).join('') + (state.days.length > 1
+      ? '<button data-day="both" class="' + (modalDay === 'both' ? 'active' : '') + '">Both</button>'
+      : '');
     $('exGymSeg').querySelectorAll('button').forEach(b => {
       b.addEventListener('click', () => {
         modalGym = b.dataset.gym;
