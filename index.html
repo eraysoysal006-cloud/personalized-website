@@ -990,15 +990,29 @@
     opacity: 0;
   }
 
-  .habit-subitem {
+  .habit-subitem-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    cursor: pointer;
+    padding: 5px 4px;
+    margin: -5px -4px;
+    border-radius: 8px;
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
   }
+  .habit-subitem-label:hover,
+  .habit-subitem-label:active { background: rgba(255,255,255,0.05); }
 
-  .habit-subitem-cb .goal-cb-visual { width: 18px; height: 18px; border-radius: 6px; }
+  .habit-subitem-cb .goal-cb-visual {
+    width: 19px;
+    height: 19px;
+    border-radius: 6px;
+    border-color: rgba(255,255,255,0.32);
+    background: rgba(255,255,255,0.07);
+  }
   .habit-subitem-cb .goal-cb-visual::after { left: 4px; top: 1px; width: 6px; height: 9px; }
-  .habit-subitem-cb { width: 18px; height: 18px; }
+  .habit-subitem-cb { width: 19px; height: 19px; }
 
   .habit-subitem-text {
     font-size: 12.5px;
@@ -1962,7 +1976,11 @@ function loadHabits() {
         for (const si of h.subItems) {
           const li = document.createElement('li');
           li.className = 'habit-subitem' + (entry[si.id] ? ' is-checked' : '');
-          const cbWrap = document.createElement('label');
+
+          const label = document.createElement('label');
+          label.className = 'habit-subitem-label';
+
+          const cbWrap = document.createElement('span');
           cbWrap.className = 'goal-cb-wrap habit-subitem-cb';
           const cb = document.createElement('input');
           cb.type = 'checkbox';
@@ -1972,11 +1990,14 @@ function loadHabits() {
           cbVisual.className = 'goal-cb-visual';
           cbWrap.appendChild(cb);
           cbWrap.appendChild(cbVisual);
-          li.appendChild(cbWrap);
+          label.appendChild(cbWrap);
+
           const txt = document.createElement('span');
           txt.className = 'habit-subitem-text';
           txt.textContent = si.name;
-          li.appendChild(txt);
+          label.appendChild(txt);
+
+          li.appendChild(label);
           list.appendChild(li);
         }
         tile.appendChild(list);
