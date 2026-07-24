@@ -1670,6 +1670,8 @@ img, video, canvas, svg { max-width: 100%; }
               <span class="po-tw-summary-label">sets</span>
               <span class="po-tw-summary-sep">·</span>
               <span class="po-tw-summary-vol" id="poTwTotalVol">0 kg lifted</span>
+              <span class="po-tw-summary-sep hidden" id="poTwDurationSep">·</span>
+              <span class="po-tw-summary-vol hidden" id="poTwDuration"></span>
             </div>
           </div>
           <button class="po-tw-done-btn" id="poTwDoneBtn" type="button">Mark workout done</button>
@@ -2263,6 +2265,24 @@ img, video, canvas, svg { max-width: 100%; }
 
     $('poTwSetCount').textContent = sum.totalSets;
     $('poTwTotalVol').textContent = Math.round(sum.totalVol).toLocaleString() + ' ' + u + ' lifted';
+
+    // Session duration: span between the first and last set logged today —
+    // no separate start/stop action needed, it's derived from existing
+    // timestamps. Only shown once there's enough to make it meaningful.
+    const durSep = $('poTwDurationSep'), durEl = $('poTwDuration');
+    if (todaySets.length >= 2) {
+      const times = todaySets.map(s => new Date(s.log.date).getTime()).filter(t => !isNaN(t));
+      const spanMin = Math.round((Math.max.apply(null, times) - Math.min.apply(null, times)) / 60000);
+      if (spanMin > 0) {
+        const h = Math.floor(spanMin / 60), m = spanMin % 60;
+        durEl.textContent = (h > 0 ? h + 'h ' : '') + m + 'm';
+        durSep.classList.remove('hidden'); durEl.classList.remove('hidden');
+      } else {
+        durSep.classList.add('hidden'); durEl.classList.add('hidden');
+      }
+    } else {
+      durSep.classList.add('hidden'); durEl.classList.add('hidden');
+    }
 
     const list = $('poTwList');
     const empty = $('poTwEmpty');
