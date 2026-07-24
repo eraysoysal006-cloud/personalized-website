@@ -1842,7 +1842,7 @@ img, video, canvas, svg { max-width: 100%; }
         if (found >= 0) idx = found;
       }
       s.splitAnchor = {
-        date: (CONFIG.splitAnchor && CONFIG.splitAnchor.date) || new Date().toISOString().slice(0, 10),
+        date: (CONFIG.splitAnchor && CONFIG.splitAnchor.date) || wtDateKey(new Date()),
         index: idx
       };
     }
@@ -2099,7 +2099,7 @@ img, video, canvas, svg { max-width: 100%; }
     try {
       const rot = state.splitRotation;
       if (!rot || !rot.length) return { name: '—', index: 0 };
-      const a = new Date(state.splitAnchor.date);
+      const a = wtParseKey(state.splitAnchor.date);
       const t = new Date();
       a.setHours(0,0,0,0); t.setHours(0,0,0,0);
       const diffDays = Math.round((t - a) / 86400000);
@@ -2680,7 +2680,7 @@ img, video, canvas, svg { max-width: 100%; }
     if (newTodayIdx >= cleaned.length) newTodayIdx = 0;
     state.splitRotation = cleaned;
     state.splitAnchor = {
-      date: new Date().toISOString().slice(0, 10),
+      date: wtDateKey(new Date()),
       index: newTodayIdx
     };
     saveState();
@@ -2773,7 +2773,7 @@ img, video, canvas, svg { max-width: 100%; }
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'po-coach-data-' + new Date().toISOString().slice(0,10) + '.json';
+    a.href = url; a.download = 'po-coach-data-' + wtDateKey(new Date()) + '.json';
     a.click(); URL.revokeObjectURL(url);
   });
   $('setImport').addEventListener('click', () => $('setImportFile').click());
@@ -3481,6 +3481,10 @@ img, video, canvas, svg { max-width: 100%; }
   // JSON of the last state we sent or received — used to ignore
   // realtime echoes of our own pushes so we don't infinite-loop.
   let pcLastSyncedJson = null;
+  // Which of PC_SYNCED_KEYS this device believes currently exist server-side —
+  // lets a push tell "key never touched on this device" (leave alone) apart
+  // from "key was deleted on this device" (propagate the deletion).
+  let pcLastKnownKeys = new Set();
 
   const _pcOrigSet = localStorage.setItem.bind(localStorage);
   const _pcOrigRemove = localStorage.removeItem.bind(localStorage);
@@ -3548,6 +3552,7 @@ img, video, canvas, svg { max-width: 100%; }
           try { _pcOrigRemove(k); changed = true; } catch {}
         }
       }
+      pcLastKnownKeys = new Set(PC_SYNCED_KEYS.filter(k => k in remote));
     } finally {
       pcSuppressSync = false;
     }
@@ -3574,13 +3579,25 @@ img, video, canvas, svg { max-width: 100%; }
     const json = JSON.stringify(state);
     if (json === pcLastSyncedJson) return;
     try {
+      // Merge onto the current remote row instead of overwriting it outright —
+      // a device missing one of the synced keys locally (e.g. never took a
+      // progress photo) must not wipe that key server-side. Keys this device
+      // previously knew about but no longer has locally (an explicit local
+      // delete, e.g. "Reset everything") ARE removed from the merged result.
+      const { data: row } = await pcSupa.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+      const remote = (row && row.data) || {};
+      const merged = Object.assign({}, remote, state);
+      for (const k of pcLastKnownKeys) { if (!(k in state)) delete merged[k]; }
       const { error } = await pcSupa
         .from('app_state')
         .upsert(
-          { key: APP_KEY, data: state, updated_at: new Date().toISOString() },
+          { key: APP_KEY, data: merged, updated_at: new Date().toISOString() },
           { onConflict: 'key' }
         );
-      if (!error) pcLastSyncedJson = json;
+      if (!error) {
+        pcLastSyncedJson = json;
+        pcLastKnownKeys = new Set(Object.keys(merged));
+      }
     } catch (_) {}
   }
 
@@ -3598,17 +3615,31 @@ img, video, canvas, svg { max-width: 100%; }
     const json = JSON.stringify(state);
     if (json === pcLastSyncedJson) return;
     try {
-      fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates',
-        },
-        body: JSON.stringify({ key: APP_KEY, data: state, updated_at: new Date().toISOString() }),
+      // Same merge reasoning as pcPushNow — a backgrounded/closing tab must
+      // not blind-overwrite keys it doesn't have locally.
+      fetch(SUPABASE_URL + '/rest/v1/app_state?key=eq.' + APP_KEY + '&select=data', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
         keepalive: true,
-      }).catch(() => {});
+      })
+        .then(r => r.json())
+        .catch(() => [])
+        .then(rows => {
+          const remote = (rows && rows[0] && rows[0].data) || {};
+          const merged = Object.assign({}, remote, state);
+          for (const k of pcLastKnownKeys) { if (!(k in state)) delete merged[k]; }
+          return fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_KEY,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates',
+            },
+            body: JSON.stringify({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() }),
+            keepalive: true,
+          });
+        })
+        .catch(() => {});
       pcLastSyncedJson = json;
     } catch (_) {}
   }

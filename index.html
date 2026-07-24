@@ -2443,7 +2443,7 @@ function financeParseAmount(s) {
   return isNaN(n) ? null : n;
 }
 function financeNormDate(s) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toDateKey(new Date());
   if (s == null || s === '') return today;
   s = String(s).trim();
   let m = s.match(/(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
@@ -2454,7 +2454,7 @@ function financeNormDate(s) {
     return y + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
   }
   const d = new Date(s);
-  return isNaN(d) ? today : d.toISOString().slice(0, 10);
+  return isNaN(d) ? today : toDateKey(d);
 }
 function financeParseCSV(text) {
   const rows = []; let row = [], cell = '', q = false;
@@ -2986,6 +2986,7 @@ function applySyncedState(state) {
   }
   for (const k of current) if (!(k in state)) rawRemoveItem(k);
   for (const [k, v] of Object.entries(state)) rawSetItem(k, v);
+  lastKnownKeys = new Set(Object.keys(state));
 }
 
 function isEditingField() {
@@ -3008,6 +3009,10 @@ function refreshFromStorage() {
 let lastSyncedJson = null;
 let pendingRemote = null;
 let pushTimer = null;
+// Which synced keys this device believes currently exist server-side — lets
+// a push tell "key never touched on this device" (leave alone) apart from
+// "key was deleted on this device" (propagate the deletion).
+let lastKnownKeys = new Set();
 
 function schedulePush() {
   if (pushTimer) clearTimeout(pushTimer);
@@ -3019,16 +3024,37 @@ async function pushNow() {
   const state = snapshotSyncedState();
   const json = JSON.stringify(state);
   if (json === lastSyncedJson) return;
+  const currentKeys = new Set(Object.keys(state));
   try {
     // Merge onto the current remote row instead of overwriting it outright —
     // otherwise a stale tab pushing its own (older/incomplete) snapshot can
-    // silently wipe keys that only exist server-side (e.g. seeded directly).
-    const { data: row } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
-    const merged = Object.assign({}, (row && row.data) || {}, state);
-    const { error } = await sb.from('app_state')
-      .upsert({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() });
-    if (error) console.error('Sync push error:', error);
-    else lastSyncedJson = json;
+    // silently wipe keys that only exist server-side (e.g. seeded directly,
+    // or written by po-coach.html's own nutrition logger). Keys this device
+    // previously knew about but no longer has locally ARE deleted remotely
+    // (e.g. the old-goals cleanup in rolloverGoals). Writes are done with an
+    // optimistic-concurrency check (updated_at must match what we read) and
+    // retried on conflict so a concurrent writer (another tab/page hitting
+    // the same row) can never get silently clobbered by a stale merge.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data: row } = await sb.from('app_state').select('data, updated_at').eq('key', APP_KEY).maybeSingle();
+      const remote = (row && row.data) || {};
+      const merged = Object.assign({}, remote, state);
+      for (const k of lastKnownKeys) { if (!currentKeys.has(k)) delete merged[k]; }
+
+      if (!row) {
+        const { error } = await sb.from('app_state').insert({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() });
+        if (!error) { lastSyncedJson = json; lastKnownKeys = new Set(Object.keys(merged)); return; }
+        continue; // someone else created the row between our read and write — retry as an update
+      }
+      const { data: updated, error } = await sb.from('app_state')
+        .update({ data: merged, updated_at: new Date().toISOString() })
+        .eq('key', APP_KEY).eq('updated_at', row.updated_at)
+        .select();
+      if (error) { console.error('Sync push error:', error); return; }
+      if (updated && updated.length) { lastSyncedJson = json; lastKnownKeys = new Set(Object.keys(merged)); return; }
+      // else: row changed under us between read and write (a concurrent writer) — retry with a fresh read
+    }
+    console.error('Sync push gave up after repeated conflicts');
   } catch (e) { console.error('Sync push failed:', e); }
 }
 
@@ -3063,6 +3089,7 @@ async function pullAndApply() {
     const local = snapshotSyncedState();
     if (Object.keys(local).length > 0) {
       lastSyncedJson = JSON.stringify(local);
+      lastKnownKeys = new Set(Object.keys(local));
       await sb.from('app_state').upsert({ key: APP_KEY, data: local, updated_at: new Date().toISOString() });
     }
     return;
@@ -3092,6 +3119,7 @@ function flushSync() {
   const json = JSON.stringify(state);
   if (json === lastSyncedJson) return;
   lastSyncedJson = json;
+  const currentKeys = new Set(Object.keys(state));
   try {
     // Merge onto current remote data (same reasoning as pushNow) so a
     // backgrounded/closing tab can't clobber keys it doesn't know about.
@@ -3104,6 +3132,7 @@ function flushSync() {
       .then(rows => {
         const remote = (rows && rows[0] && rows[0].data) || {};
         const merged = Object.assign({}, remote, state);
+        for (const k of lastKnownKeys) { if (!currentKeys.has(k)) delete merged[k]; }
         return fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
           method: 'POST',
           keepalive: true,

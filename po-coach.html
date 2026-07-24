@@ -453,30 +453,59 @@ async function callClaude() {
   return data.content[0].text;
 }
 
-// Pulls a trailing "NUTRITION_LOG: {...}" line out of the coach's reply (if
-// present) so it never shows up in the chat bubble, and returns the parsed entry.
+// Pulls a "NUTRITION_LOG: {...}" tag out of the coach's reply (if present) so
+// it never shows up in the chat bubble, and returns the parsed entry. Scans
+// braces by hand (rather than a regex anchored to end-of-string) so it still
+// works if the model puts anything after the tag or the object isn't flat.
 function extractNutritionTag(text) {
-  const m = text.match(/NUTRITION_LOG:\s*(\{[\s\S]*?\})\s*$/);
-  if (!m) return { cleanText: text, entry: null };
+  const tagIdx = text.indexOf('NUTRITION_LOG:');
+  if (tagIdx === -1) return { cleanText: text, entry: null };
+  const braceStart = text.indexOf('{', tagIdx);
+  if (braceStart === -1) return { cleanText: text, entry: null };
+  let depth = 0, braceEnd = -1;
+  for (let i = braceStart; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}') { depth--; if (depth === 0) { braceEnd = i; break; } }
+  }
+  if (braceEnd === -1) return { cleanText: text, entry: null };
   let entry = null;
-  try { entry = JSON.parse(m[1]); } catch (e) { console.error('Bad NUTRITION_LOG tag:', e); }
-  return { cleanText: text.slice(0, m.index).trim(), entry };
+  try { entry = JSON.parse(text.slice(braceStart, braceEnd + 1)); } catch (e) { console.error('Bad NUTRITION_LOG tag:', e); }
+  return { cleanText: text.slice(0, tagIdx).trim(), entry };
 }
 
 // Nutrition data lives on the dashboard's own app_state row (key: 'dashboard'),
 // not this page's. Read-modify-write, merging onto whatever's already there.
+// The dashboard tab (index.html) writes to this exact row too, on its own
+// periodic sync cycle — so this uses an optimistic-concurrency check
+// (updated_at must match what we just read) and retries on conflict,
+// otherwise a dashboard push landing between our read and write could
+// silently overwrite the entry we're trying to log (or vice versa).
 async function logNutritionEntry(entry) {
   const date = getActiveDateString();
   const nutritionKey = 'nutrition:' + date;
   try {
-    const { data: row, error: readErr } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
-    if (readErr) throw readErr;
-    const remoteData = Object.assign({}, (row && row.data) || {});
-    const existing = remoteData[nutritionKey] ? JSON.parse(remoteData[nutritionKey]) : [];
-    existing.push(entry);
-    remoteData[nutritionKey] = JSON.stringify(existing);
-    const { error } = await sb.from('app_state').upsert({ key: 'dashboard', data: remoteData, updated_at: new Date().toISOString() });
-    if (error) throw error;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data: row, error: readErr } = await sb.from('app_state').select('data, updated_at').eq('key', 'dashboard').maybeSingle();
+      if (readErr) throw readErr;
+      const remoteData = Object.assign({}, (row && row.data) || {});
+      const existing = remoteData[nutritionKey] ? JSON.parse(remoteData[nutritionKey]) : [];
+      existing.push(entry);
+      remoteData[nutritionKey] = JSON.stringify(existing);
+
+      if (!row) {
+        const { error } = await sb.from('app_state').insert({ key: 'dashboard', data: remoteData, updated_at: new Date().toISOString() });
+        if (!error) return;
+        continue; // someone else created the row between our read and write — retry as an update
+      }
+      const { data: updated, error } = await sb.from('app_state')
+        .update({ data: remoteData, updated_at: new Date().toISOString() })
+        .eq('key', 'dashboard').eq('updated_at', row.updated_at)
+        .select();
+      if (error) throw error;
+      if (updated && updated.length) return;
+      // else: the dashboard (or another Coach tab) wrote in between — retry with a fresh read
+    }
+    console.error('logNutritionEntry: gave up after repeated conflicts');
   } catch (e) {
     console.error('Failed to log nutrition entry:', e);
   }
