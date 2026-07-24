@@ -2454,10 +2454,12 @@ img, video, canvas, svg { max-width: 100%; }
     if (!ex.bw && w <= 0) { alert('Enter a weight.'); return; }
 
     const arr = state.logs[ex.id] || [];
+    // PR = heaviest weight ever moved on this exercise (reps for bodyweight,
+    // since there's no weight to compare there).
     const priorBest = arr.length
-      ? Math.max.apply(null, arr.map(l => ex.bw ? l.reps : estimate1RM(l.weight, l.reps)))
+      ? Math.max.apply(null, arr.map(l => ex.bw ? l.reps : l.weight))
       : -Infinity;
-    const newVal = ex.bw ? reps : estimate1RM(w, reps);
+    const newVal = ex.bw ? reps : w;
     const isPR = arr.length > 0 && newVal > priorBest;
 
     arr.push({ weight: w, reps: reps, date: new Date().toISOString() });
