@@ -518,11 +518,11 @@
   /* DASHBOARD GRID (desktop gets multi-column; mobile stays single-column) */
   .dash-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "finance" "todo" "habits" "nutrition";
     gap: 18px;
   }
-  .dash-grid > .section { margin-bottom: 0; }
+  .dash-grid > .section { margin-bottom: 0; min-width: 0; }
   #financeSection   { grid-area: finance; }
   #todoSection      { grid-area: todo; }
   #nutritionSection { grid-area: nutrition; }
@@ -1070,9 +1070,10 @@
   /* HABITS */
   .habits-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
     gap: 10px;
     margin-bottom: 12px;
+    min-width: 0;
   }
 
   .habit-tile {
