@@ -350,6 +350,144 @@
   }
   .finance-account-row span { flex: 1; color: var(--text-secondary); }
 
+  .finance-eye-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s;
+  }
+  .finance-eye-btn:hover { background: rgba(255,255,255,0.06); }
+
+  .finance-rent-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(244,63,94,0.10);
+    border: 1px solid rgba(244,63,94,0.25);
+  }
+  .finance-rent-label {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #F43F5E;
+  }
+  .finance-rent-amt {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .finance-viewall-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    text-align: left;
+    cursor: pointer;
+    padding: 4px 0 0;
+    transition: color 0.15s;
+  }
+  .finance-viewall-btn:hover { color: var(--text-primary); }
+
+  .finance-tx-modal-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .finance-tx-modal-bg.hidden { display: none; }
+
+  .finance-tx-modal {
+    width: 100%;
+    max-width: 480px;
+    max-height: 82vh;
+    background: #101115;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+
+  .finance-tx-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .finance-tx-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .finance-tx-modal-close:hover { color: var(--text-primary); }
+
+  .finance-tx-sort-row { display: flex; gap: 8px; }
+  .finance-sort-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .finance-sort-btn.active {
+    background: rgba(92,127,234,0.14);
+    border-color: rgba(92,127,234,0.35);
+    color: var(--text-primary);
+  }
+
+  .finance-tx-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .finance-tx-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+  }
+  .finance-tx-row:last-child { border-bottom: none; }
+  .finance-tx-row-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .finance-tx-row-desc { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .finance-tx-row-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-tertiary); }
+  .finance-tx-row-amt { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-primary); white-space: nowrap; flex-shrink: 0; }
+  .finance-tx-row-amt.is-income { color: var(--success); }
+
   /* SECTION */
   .section { margin-bottom: 18px; }
 
@@ -1195,6 +1333,20 @@
   </div>
 </div>
 
+<div class="finance-tx-modal-bg hidden" id="financeTxModalBg">
+  <div class="finance-tx-modal">
+    <div class="finance-tx-modal-header">
+      <span id="financeTxModalTitle">All transactions</span>
+      <button class="finance-tx-modal-close" id="financeTxModalClose" type="button">×</button>
+    </div>
+    <div class="finance-tx-sort-row">
+      <button class="finance-sort-btn active" id="financeSortDateBtn" type="button" data-sort="date">📅 Date</button>
+      <button class="finance-sort-btn" id="financeSortAmtBtn" type="button" data-sort="amount">💸 Amount</button>
+    </div>
+    <div class="finance-tx-list" id="financeTxList"></div>
+  </div>
+</div>
+
 <nav class="tabbar" aria-label="Primary">
   <div class="tabbar-inner">
     <a class="tab" href="index.html" aria-current="page">
@@ -1239,7 +1391,14 @@
       <div class="gm-card-header-left">
         <div class="gm-eyebrow" id="financeMonthLabel">This month</div>
       </div>
-      <button class="sleep-toggle-btn" id="sleepGoToBedBtn" type="button">😴 Going to sleep</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="finance-eye-btn" id="financeEyeBtn" type="button" title="Show/hide amount">🙈</button>
+        <button class="sleep-toggle-btn" id="sleepGoToBedBtn" type="button">😴 Going to sleep</button>
+      </div>
+    </div>
+    <div class="finance-rent-badge hidden" id="financeRentBadge">
+      <span class="finance-rent-label">Rent</span>
+      <span class="finance-rent-amt" id="financeRentAmt">€0</span>
     </div>
     <div class="finance-body">
       <div class="finance-donut-wrap">
@@ -1249,8 +1408,9 @@
           <span class="finance-donut-label">spent</span>
         </div>
       </div>
-      <div class="finance-panel-title" style="margin-bottom:0;">Top categories</div>
+      <div class="finance-panel-title" style="margin-bottom:0;">Top categories (excl. rent)</div>
       <div class="finance-legend" id="financeLegend"></div>
+      <button class="finance-viewall-btn" id="financeViewAllBtn" type="button">View all transactions →</button>
     </div>
     <div class="empty-state" id="financeEmptyState">No transactions yet — tap "+ Add / Import" below.</div>
 
@@ -2162,19 +2322,25 @@ function financeCurrentMonthKey() {
   return getActiveDateString().slice(0, 7);
 }
 
+let financeAmountHidden = true;
+let financeTxSort = 'date';
+
 function renderFinance() {
   const db = financeLoad();
   const month = financeCurrentMonthKey();
-  const cur = db.displayCur || 'TRY';
+  const cur = 'EUR';
   document.getElementById('financeMonthLabel').textContent = 'This month — ' + month;
+  document.getElementById('financeEyeBtn').textContent = financeAmountHidden ? '🙈' : '👁️';
 
   const monthTxns = db.txns.filter(t => t.date.startsWith(month) && !t.income);
   const emptyEl = document.getElementById('financeEmptyState');
   const bodyEl = document.querySelector('.finance-body');
+  const rentBadge = document.getElementById('financeRentBadge');
 
   if (monthTxns.length === 0) {
     emptyEl.style.display = 'block';
     bodyEl.style.display = 'none';
+    rentBadge.classList.add('hidden');
     document.getElementById('financeTotalAmount').textContent = financeFmt(0, cur);
     document.getElementById('financeDonut').innerHTML =
       '<circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14"/>';
@@ -2184,20 +2350,32 @@ function renderFinance() {
     bodyEl.style.display = 'flex';
 
     const total = monthTxns.reduce((s, t) => s + financeConvTo(t.amount, t.cur, cur), 0);
-    document.getElementById('financeTotalAmount').textContent = financeFmt(total, cur);
+    document.getElementById('financeTotalAmount').textContent = financeAmountHidden ? '••••' : financeFmt(total, cur);
 
+    const rentTxns = monthTxns.filter(t => (t.category || 'Diğer') === 'Kira');
+    const rentTotal = rentTxns.reduce((s, t) => s + financeConvTo(t.amount, t.cur, cur), 0);
+    if (rentTxns.length) {
+      rentBadge.classList.remove('hidden');
+      document.getElementById('financeRentAmt').textContent = financeAmountHidden ? '••••' : financeFmt(rentTotal, cur);
+    } else {
+      rentBadge.classList.add('hidden');
+    }
+
+    // Category breakdown excludes rent — it's a fixed cost that dwarfs everything else.
+    const nonRentTxns = monthTxns.filter(t => (t.category || 'Diğer') !== 'Kira');
     const byCat = {};
-    monthTxns.forEach(t => {
+    nonRentTxns.forEach(t => {
       const c = t.category || 'Diğer';
       byCat[c] = (byCat[c] || 0) + financeConvTo(t.amount, t.cur, cur);
     });
     const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    const nonRentTotal = cats.reduce((s, [, v]) => s + v, 0);
 
     const svg = document.getElementById('financeDonut');
     const R = 48, C = 2 * Math.PI * R;
     let off = 0;
     svg.innerHTML = cats.map(([c, v]) => {
-      const len = Math.max(C * (v / total), 0);
+      const len = Math.max(C * (v / nonRentTotal), 0);
       const seg = `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${financeCatColor(c)}" stroke-width="14" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"/>`;
       off += len;
       return seg;
@@ -2207,7 +2385,7 @@ function renderFinance() {
       <div class="finance-legend-row">
         <span class="finance-legend-dot" style="background:${financeCatColor(c)}"></span>
         <span class="finance-legend-name">${c}</span>
-        <span class="finance-legend-amt">${financeFmt(v, cur)}<span class="finance-legend-pct">${Math.round(v / total * 100)}%</span></span>
+        <span class="finance-legend-amt">${financeAmountHidden ? '••••' : financeFmt(v, cur)}<span class="finance-legend-pct">${Math.round(v / nonRentTotal * 100)}%</span></span>
       </div>
     `).join('');
   }
@@ -2354,6 +2532,65 @@ document.getElementById('financeImportBtn').addEventListener('click', () => {
   } else {
     showStatus(msgEl, 'Choose a file or paste CSV content.', true);
   }
+});
+
+document.getElementById('financeEyeBtn').addEventListener('click', () => {
+  financeAmountHidden = !financeAmountHidden;
+  renderFinance();
+});
+
+function renderFinanceTxModal() {
+  const db = financeLoad();
+  const month = financeCurrentMonthKey();
+  const cur = 'EUR';
+  const txns = db.txns.filter(t => t.date.startsWith(month));
+
+  document.getElementById('financeTxModalTitle').textContent = 'Transactions — ' + month;
+
+  const sorted = txns.slice().sort((a, b) => {
+    if (financeTxSort === 'amount') {
+      return financeConvTo(b.amount, b.cur, cur) - financeConvTo(a.amount, a.cur, cur);
+    }
+    return b.date.localeCompare(a.date);
+  });
+
+  const listEl = document.getElementById('financeTxList');
+  if (!sorted.length) {
+    listEl.innerHTML = '<div class="empty-state">No transactions this month.</div>';
+    return;
+  }
+  listEl.innerHTML = sorted.map(t => `
+    <div class="finance-tx-row">
+      <div class="finance-tx-row-left">
+        <span class="finance-tx-row-desc">${t.desc}</span>
+        <span class="finance-tx-row-meta">${t.date}${t.category ? ' · ' + t.category : ''}</span>
+      </div>
+      <span class="finance-tx-row-amt${t.income ? ' is-income' : ''}">${t.income ? '+' : '−'}${financeAmountHidden ? '••••' : financeFmt(financeConvTo(t.amount, t.cur, cur), cur)}</span>
+    </div>
+  `).join('');
+}
+
+document.getElementById('financeViewAllBtn').addEventListener('click', () => {
+  renderFinanceTxModal();
+  document.getElementById('financeTxModalBg').classList.remove('hidden');
+});
+document.getElementById('financeTxModalClose').addEventListener('click', () => {
+  document.getElementById('financeTxModalBg').classList.add('hidden');
+});
+document.getElementById('financeTxModalBg').addEventListener('click', (e) => {
+  if (e.target.id === 'financeTxModalBg') document.getElementById('financeTxModalBg').classList.add('hidden');
+});
+document.getElementById('financeSortDateBtn').addEventListener('click', () => {
+  financeTxSort = 'date';
+  document.getElementById('financeSortDateBtn').classList.add('active');
+  document.getElementById('financeSortAmtBtn').classList.remove('active');
+  renderFinanceTxModal();
+});
+document.getElementById('financeSortAmtBtn').addEventListener('click', () => {
+  financeTxSort = 'amount';
+  document.getElementById('financeSortAmtBtn').classList.add('active');
+  document.getElementById('financeSortDateBtn').classList.remove('active');
+  renderFinanceTxModal();
 });
 
 // ─── SLEEP ────────────────────────────────────────────────────────────────────
