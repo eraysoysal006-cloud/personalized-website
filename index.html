@@ -8,12 +8,12 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --text-primary: #FAFAFA;
-    --text-secondary: #B8B6B0;
-    --text-tertiary: #76746E;
-    --success: #6BE3A4;
-    --warning: #F2C063;
-    --danger: #FF6B6B;
+    --text-primary: #F5F5F4;
+    --text-secondary: #B7B7B2;
+    --text-tertiary: #8A8A85;
+    --success: #34D399;
+    --warning: #FBBF24;
+    --danger: #F87171;
     --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --card-bg: rgba(255,255,255,0.04);
@@ -22,7 +22,7 @@
   }
 
   body {
-    background-color: #050506;
+    background-color: #08090B;
     font-family: var(--font-sans);
     color: var(--text-primary);
     min-height: 100vh;
@@ -38,8 +38,8 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse 60% 50% at 82% 14%, rgba(224,118,88,0.16) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 60% at 18% 90%, rgba(180,180,200,0.06) 0%, transparent 70%);
+      radial-gradient(ellipse 60% 50% at 82% 14%, rgba(52,211,153,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 18% 90%, rgba(180,180,200,0.05) 0%, transparent 70%);
     filter: blur(40px);
     pointer-events: none;
     z-index: 0;
@@ -123,7 +123,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #6BE3A4;
+    background: #34D399;
     box-shadow: 0 0 8px rgba(107,227,164,0.7);
     animation: ledPulse 1.6s ease-in-out infinite;
   }
@@ -421,9 +421,9 @@
   }
 
   .gm-streak.gm-streak-active {
-    background: rgba(242,192,99,0.10);
-    color: #F2C063;
-    border-color: rgba(242,192,99,0.32);
+    background: rgba(52,211,153,0.10);
+    color: #34D399;
+    border-color: rgba(52,211,153,0.32);
   }
 
   .gm-streak-icon {
@@ -432,7 +432,7 @@
   }
 
   .gm-streak.gm-streak-active .gm-streak-icon {
-    filter: drop-shadow(0 0 6px rgba(242,192,99,0.6));
+    filter: drop-shadow(0 0 6px rgba(52,211,153,0.6));
   }
 
   .gm-streak-num {
@@ -467,7 +467,7 @@
   }
 
   .gm-bar-seg-done {
-    background: #6BE3A4;
+    background: #34D399;
     box-shadow: 0 0 6px rgba(107,227,164,0.40);
   }
 
@@ -504,14 +504,14 @@
   }
 
   .goal-item.is-queued {
-    background: rgba(242,192,99,0.10);
-    box-shadow: inset 3px 0 0 0 #F2C063;
+    background: rgba(52,211,153,0.10);
+    box-shadow: inset 3px 0 0 0 #34D399;
   }
 
-  .goal-item.is-queued .goal-text { color: #FFE2A8; }
+  .goal-item.is-queued .goal-text { color: #A7F3D3; }
 
   @keyframes queueFlash {
-    0%   { background: rgba(242,192,99,0.32); transform: scale(1.015); }
+    0%   { background: rgba(52,211,153,0.32); transform: scale(1.015); }
     100% { background: transparent; transform: scale(1); }
   }
 
@@ -563,8 +563,8 @@
   }
 
   .goal-cb-wrap input:checked ~ .goal-cb-visual {
-    background: #6BE3A4;
-    border-color: #6BE3A4;
+    background: #34D399;
+    border-color: #34D399;
     box-shadow: 0 0 12px rgba(107,227,164,0.40);
   }
 
@@ -575,7 +575,7 @@
     top: 2px;
     width: 7px;
     height: 11px;
-    border: 2.5px solid #050506;
+    border: 2.5px solid #08090B;
     border-top: none;
     border-left: none;
     transform: rotate(45deg) scale(0);
@@ -614,9 +614,9 @@
   }
 
   .gm-queue-btn.is-active {
-    color: #F2C063;
+    color: #34D399;
     opacity: 1;
-    filter: drop-shadow(0 0 4px rgba(242,192,99,0.65));
+    filter: drop-shadow(0 0 4px rgba(52,211,153,0.65));
   }
 
   .goal-delete {
@@ -711,8 +711,8 @@
   .goal-add-btn {
     padding: 11px 20px;
     border-radius: 12px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
-    color: #0A0A0B;
+    background: linear-gradient(180deg, #4EEBB0 0%, #34D399 100%);
+    color: #08090B;
     border: none;
     font-family: var(--font-sans);
     font-size: 13px;
@@ -866,8 +866,8 @@
   .tab:hover { color: var(--text-primary); }
   .tab[aria-current="page"] {
     color: var(--text-primary);
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.10);
+    background: rgba(52,211,153,0.10);
+    border-color: rgba(52,211,153,0.25);
   }
   .tab-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
   .tab-icon svg { width: 100%; height: 100%; display: block; }

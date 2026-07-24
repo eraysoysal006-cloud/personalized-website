@@ -8,12 +8,12 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --text-primary: #FAFAFA;
-    --text-secondary: #B8B6B0;
-    --text-tertiary: #76746E;
-    --success: #6BE3A4;
-    --warning: #F2C063;
-    --danger: #FF6B6B;
+    --text-primary: #F5F5F4;
+    --text-secondary: #B7B7B2;
+    --text-tertiary: #8A8A85;
+    --success: #34D399;
+    --warning: #FBBF24;
+    --danger: #F87171;
     --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --card-bg: rgba(255,255,255,0.04);
@@ -22,7 +22,7 @@
   }
 
   body {
-    background-color: #050506;
+    background-color: #08090B;
     font-family: var(--font-sans);
     color: var(--text-primary);
     min-height: 100vh;
@@ -89,7 +89,7 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
-  .context-value.is-streak { color: var(--warning); }
+  .context-value.is-streak { color: var(--success); }
 
   /* CHAT */
   .chat-card {
@@ -136,8 +136,8 @@
 
   .msg.user {
     align-self: flex-end;
-    background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
-    color: #0A0A0B;
+    background: linear-gradient(180deg, #4EEBB0 0%, #34D399 100%);
+    color: #08090B;
     border-bottom-right-radius: 4px;
   }
 
@@ -190,8 +190,8 @@
   .chat-send-btn {
     padding: 11px 20px;
     border-radius: 12px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
-    color: #0A0A0B;
+    background: linear-gradient(180deg, #4EEBB0 0%, #34D399 100%);
+    color: #08090B;
     border: none;
     font-family: var(--font-sans);
     font-size: 13px;
@@ -243,8 +243,8 @@
   .tab:hover { color: var(--text-primary); }
   .tab[aria-current="page"] {
     color: var(--text-primary);
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.10);
+    background: rgba(52,211,153,0.10);
+    border-color: rgba(52,211,153,0.25);
   }
   .tab-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
   .tab-icon svg { width: 100%; height: 100%; display: block; }
