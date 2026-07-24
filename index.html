@@ -730,15 +730,17 @@
   .goal-input-wrap {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
     border-top: 1px solid rgba(255,255,255,0.06);
     padding-top: 14px;
     margin-top: 14px;
   }
+  .goal-input-wrap > * { min-width: 0; }
 
   .goal-input {
-    flex: 1;
+    flex: 1 1 120px;
     padding: 11px 14px;
     border-radius: 12px;
     background: rgba(255,255,255,0.04);
