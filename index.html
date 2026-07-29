@@ -683,6 +683,14 @@
     text-transform: uppercase;
   }
 
+  .gm-streak-freeze {
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 2px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255,255,255,0.15);
+  }
+
   /* BAR */
   .gm-bar {
     display: flex;
@@ -1532,6 +1540,7 @@
         <span class="gm-streak-icon">⚡</span>
         <span class="gm-streak-num" id="gmStreakNum">0</span>
         <span class="gm-streak-label">day streak</span>
+        <span class="gm-streak-freeze hidden" id="gmStreakFreeze" title="Streak freezes available">❄️ <span id="gmStreakFreezeNum">0</span></span>
       </div>
     </div>
     <div class="gm-bar" id="gmBar"></div>
@@ -1706,9 +1715,13 @@ function runRollover() {
 }
 
 // ─── STREAK ─────────────────────────────────────────────────────────────────
+// Duolingo-style: completing at least one goal that day keeps the streak
+// (not all of them), and a freeze bank (earned every 7-day milestone, capped
+// at 2) auto-protects a fully-missed day instead of resetting to 0.
 function runStreakCheck() {
   const activeDate = getActiveDateString();
-  const state = storeGet('goal_streak_v1') || { count: 0, lastProcessedDate: null };
+  const state = storeGet('goal_streak_v1') || { count: 0, lastProcessedDate: null, freezesAvailable: 0 };
+  if (state.freezesAvailable == null) state.freezesAvailable = 0;
   const allKeys = storeListKeys('goals:').sort();
 
   for (const key of allKeys) {
@@ -1717,8 +1730,14 @@ function runStreakCheck() {
     if (state.lastProcessedDate && date <= state.lastProcessedDate) continue;
     const goals = storeGet(key) || [];
     if (goals.length === 0) { state.lastProcessedDate = date; continue; }
-    if (goals.every(g => g.done)) { state.count++; }
-    else { state.count = 0; }
+    if (goals.some(g => g.done)) {
+      state.count++;
+      if (state.count % 7 === 0 && state.freezesAvailable < 2) state.freezesAvailable++;
+    } else if (state.freezesAvailable > 0) {
+      state.freezesAvailable--;
+    } else {
+      state.count = 0;
+    }
     state.lastProcessedDate = date;
   }
   storeSet('goal_streak_v1', state);
@@ -1823,11 +1842,20 @@ function renderTodayHeader(goals) {
 }
 
 function renderStreak() {
-  const state = storeGet('goal_streak_v1') || { count: 0 };
+  const state = storeGet('goal_streak_v1') || { count: 0, freezesAvailable: 0 };
   document.getElementById('gmStreakNum').textContent = state.count;
   const el = document.getElementById('gmStreak');
   if (state.count > 0) el.classList.add('gm-streak-active');
   else el.classList.remove('gm-streak-active');
+
+  const freezes = state.freezesAvailable || 0;
+  const freezeEl = document.getElementById('gmStreakFreeze');
+  if (freezes > 0) {
+    document.getElementById('gmStreakFreezeNum').textContent = freezes;
+    freezeEl.classList.remove('hidden');
+  } else {
+    freezeEl.classList.add('hidden');
+  }
 }
 
 function renderTomorrowCount(goals) {
