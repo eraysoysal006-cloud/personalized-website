@@ -919,6 +919,12 @@ img, video, canvas, svg { max-width: 100%; }
 .po-cardio-minutes::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .po-cardio-form .po-btn-primary { flex-shrink: 0; padding: 0 16px; }
 
+.po-cardio-advanced {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.po-cardio-advanced.hidden { display: none; }
+.po-cardio-advanced .po-cardio-minutes { flex: 1; width: auto; min-width: 0; }
+
 .po-cardio-list { list-style: none; }
 .po-cardio-row {
   display: flex; align-items: center; gap: 10px;
@@ -1776,6 +1782,10 @@ img, video, canvas, svg { max-width: 100%; }
         </select>
         <input class="po-cardio-minutes" id="cardioMinutes" type="number" min="1" max="600" placeholder="dk">
         <button class="po-btn-primary" id="cardioLogBtn" type="button">Log</button>
+      </div>
+      <div class="po-cardio-advanced hidden" id="cardioAdvanced">
+        <input class="po-cardio-minutes" id="cardioSpeed" type="number" min="0" max="15" step="0.1" placeholder="Hız (mph)">
+        <input class="po-cardio-minutes" id="cardioIncline" type="number" min="0" max="30" step="0.5" placeholder="Eğim %">
       </div>
       <ul class="po-cardio-list" id="cardioList"></ul>
       <div class="po-cardio-empty" id="cardioEmpty">No cardio logged today.</div>
@@ -3018,9 +3028,23 @@ img, video, canvas, svg { max-width: 100%; }
     const w = entries[entries.length - 1].weight;
     return state.units === 'lb' ? w / 2.20462 : w;
   }
-  function cardioEstimateCalories(type, minutes) {
-    const met = (CARDIO_TYPES[type] || CARDIO_TYPES.walk).met;
+  // Speed+incline (treadmill) gives a much more accurate number than a flat
+  // MET per activity — a 12% incline walk burns far more than flat walking
+  // at the same "type". Uses the standard ACSM walking/running VO2 equations;
+  // falls back to the flat MET table when speed/incline aren't given.
+  function cardioEstimateCalories(type, minutes, speedMph, inclinePct) {
     const weightKg = cardioLatestWeightKg();
+    let met;
+    if ((type === 'walk' || type === 'run') && speedMph > 0 && inclinePct != null && inclinePct !== '') {
+      const speedMmin = speedMph * 26.8224; // mph -> meters/min
+      const grade = inclinePct / 100;
+      const vo2 = type === 'run'
+        ? 0.2 * speedMmin + 0.9 * speedMmin * grade + 3.5
+        : 0.1 * speedMmin + 1.8 * speedMmin * grade + 3.5;
+      met = vo2 / 3.5;
+    } else {
+      met = (CARDIO_TYPES[type] || CARDIO_TYPES.walk).met;
+    }
     return Math.round((met * 3.5 * weightKg / 200) * minutes);
   }
   function cardioTodayEntries() {
@@ -3048,7 +3072,8 @@ img, video, canvas, svg { max-width: 100%; }
       label.textContent = (CARDIO_TYPES[e.type] || CARDIO_TYPES.walk).label;
       const meta = document.createElement('span');
       meta.className = 'po-cardio-row-meta';
-      meta.textContent = e.minutes + ' dk · ' + e.calories + ' kcal';
+      meta.textContent = e.minutes + ' dk · ' + e.calories + ' kcal' +
+        (e.speed ? ' · ' + e.speed + 'mph @' + e.incline + '%' : '');
       const del = document.createElement('button');
       del.className = 'po-cardio-row-del';
       del.type = 'button';
@@ -3066,15 +3091,30 @@ img, video, canvas, svg { max-width: 100%; }
     totalEl.textContent = '🔥 -' + totalCal + ' kcal bugün';
     totalEl.classList.remove('hidden');
   }
+  function cardioUpdateAdvancedVisibility() {
+    const type = $('cardioType').value;
+    const showAdvanced = type === 'walk' || type === 'run';
+    $('cardioAdvanced').classList.toggle('hidden', !showAdvanced);
+  }
+  $('cardioType').addEventListener('change', cardioUpdateAdvancedVisibility);
+  cardioUpdateAdvancedVisibility();
+
   $('cardioLogBtn').addEventListener('click', () => {
     const type = $('cardioType').value;
     const minutes = parseInt($('cardioMinutes').value, 10);
     if (!minutes || minutes <= 0) return;
-    const calories = cardioEstimateCalories(type, minutes);
+    const speed = parseFloat($('cardioSpeed').value);
+    const incline = parseFloat($('cardioIncline').value);
+    const hasAdvanced = (type === 'walk' || type === 'run') && speed > 0 && !isNaN(incline);
+    const calories = cardioEstimateCalories(type, minutes, hasAdvanced ? speed : null, hasAdvanced ? incline : null);
     const all = cardioLoad();
-    all.push({ date: wtDateKey(new Date()), type, minutes, calories, at: new Date().toISOString() });
+    const entry = { date: wtDateKey(new Date()), type, minutes, calories, at: new Date().toISOString() };
+    if (hasAdvanced) { entry.speed = speed; entry.incline = incline; }
+    all.push(entry);
     cardioSave(all);
     $('cardioMinutes').value = '';
+    $('cardioSpeed').value = '';
+    $('cardioIncline').value = '';
     renderCardio();
   });
 
