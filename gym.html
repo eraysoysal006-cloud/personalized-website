@@ -160,15 +160,19 @@ img, video, canvas, svg { max-width: 100%; }
 }
 .tab {
   flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
+  gap: 6px;
+  padding: 12px 6px;
   border-radius: 13px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--text-2);
   text-decoration: none;
   background: transparent;
@@ -185,6 +189,7 @@ img, video, canvas, svg { max-width: 100%; }
 .tab-icon {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -804,8 +809,9 @@ img, video, canvas, svg { max-width: 100%; }
   /* Progress photos grid — match the available width */
   .wt-photo-grid { gap: 8px; }
 
-  /* Bottom tab bar — slightly smaller pills so both labels always fit */
-  .tab { padding: 11px 10px; font-size: 13px; }
+  /* Bottom tab bar — slightly smaller pills so all four labels fit */
+  .tab { padding: 10px 3px; font-size: 10.5px; gap: 3px; }
+  .tab-icon { width: 16px; height: 16px; }
   .tabbar { padding-left: 12px; padding-right: 12px; }
 }
 
@@ -1415,7 +1421,11 @@ img, video, canvas, svg { max-width: 100%; }
     </a>
     <a class="tab" href="gym.html" aria-current="page">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5"/><path d="M4 4l2.5 2.5M20 20l-2.5-2.5"/><rect x="1.5" y="9" width="4" height="6" rx="1"/><rect x="18.5" y="9" width="4" height="6" rx="1"/><path d="M5.5 12h13"/></svg></span>
-      Gym
+      Sport
+    </a>
+    <a class="tab" href="study.html">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5v-15Z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg></span>
+      Study
     </a>
   </div>
 </nav>

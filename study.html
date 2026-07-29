@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+  .hidden { display: none !important; }
+
+  :root {
+    --text-primary: #F5F5F4;
+    --text-secondary: #B7B7B2;
+    --text-tertiary: #8A8A85;
+    --success: #5C7FEA;
+    --warning: #FBBF24;
+    --danger: #F87171;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-radius: 16px;
+    --card-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  }
+
+  body {
+    background-color: #08090B;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: calc(env(safe-area-inset-top, 32px) + 22px) 24px calc(96px + env(safe-area-inset-bottom));
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  .dash-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 14px;
+  }
+
+  /* STUDY CARD */
+  .study-card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    padding: 18px 22px;
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 14px;
+  }
+
+  .study-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+
+  .study-total-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .study-total-num {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .study-total-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .study-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    margin-bottom: 14px;
+  }
+  .study-subject-input {
+    flex: 1 1 160px;
+    min-width: 0;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+  }
+  .study-subject-input::placeholder { color: var(--text-tertiary); }
+  .study-subject-input:focus { border-color: rgba(255,255,255,0.25); }
+  .study-minutes-input {
+    width: 70px;
+    flex-shrink: 0;
+    min-width: 0;
+    padding: 11px 8px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .study-minutes-input::-webkit-outer-spin-button,
+  .study-minutes-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .study-minutes-input:focus { border-color: rgba(255,255,255,0.25); }
+  .study-log-btn {
+    flex-shrink: 0;
+    padding: 11px 20px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #7B9BF5 0%, #5C7FEA 100%);
+    color: #08090B;
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .study-list { list-style: none; }
+  .study-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.035);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .study-item-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .study-item-minutes {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .study-item-del {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .study-item-del:hover { color: var(--danger); }
+
+  .empty-state {
+    text-align: center;
+    padding: 14px 0;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  /* SUMMARY POPUP */
+  .study-modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    z-index: 300;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .study-modal-bg.show { display: flex; }
+  .study-modal {
+    width: 100%; max-width: 320px;
+    background: #101115;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+  @keyframes studyModalPopIn {
+    from { opacity: 0; transform: scale(0.92) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .study-modal-bg.show .study-modal {
+    animation: studyModalPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .study-modal-emoji { font-size: 40px; margin-bottom: 6px; }
+  .study-modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .study-modal-motivation { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+  .study-modal-total { font-size: 26px; font-weight: 800; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .study-modal-total-label {
+    font-size: 10.5px; color: var(--text-tertiary); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 20px;
+  }
+  .study-modal-close-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #7B9BF5 0%, #5C7FEA 100%);
+    color: #08090B;
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* TAB BAR (shared across index.html / po-coach.html / gym.html / study.html) */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; justify-content: center;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,0.78) 38%, rgba(5,5,6,0.94) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    pointer-events: none;
+  }
+  .tabbar-inner {
+    pointer-events: auto;
+    display: flex; width: 100%; max-width: 460px; gap: 6px; padding: 6px;
+    background: rgba(20,20,22,0.72);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+  }
+  .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 12px 6px; border-radius: 13px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--text-secondary);
+    text-decoration: none;
+    background: transparent; border: 1px solid transparent;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .tab:hover { color: var(--text-primary); }
+  .tab[aria-current="page"] {
+    color: var(--text-primary);
+    background: rgba(92,127,234,0.10);
+    border-color: rgba(92,127,234,0.25);
+  }
+  .tab-icon { width: 18px; height: 18px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+  .tab-icon svg { width: 100%; height: 100%; display: block; }
+
+  @media (max-width: 480px) {
+    .dash-title { font-size: 22px; }
+    .tab { padding: 10px 3px; font-size: 10.5px; gap: 3px; }
+    .tab-icon { width: 16px; height: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="tabbar" aria-label="Primary">
+  <div class="tabbar-inner">
+    <a class="tab" href="index.html">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+      Dashboard
+    </a>
+    <a class="tab" href="po-coach.html">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+      Coach
+    </a>
+    <a class="tab" href="gym.html">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5"/><path d="M4 4l2.5 2.5M20 20l-2.5-2.5"/><rect x="1.5" y="9" width="4" height="6" rx="1"/><rect x="18.5" y="9" width="4" height="6" rx="1"/><path d="M5.5 12h13"/></svg></span>
+      Sport
+    </a>
+    <a class="tab" href="study.html" aria-current="page">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5v-15Z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg></span>
+      Study
+    </a>
+  </div>
+</nav>
+
+<h1 class="dash-title">Study</h1>
+
+<div class="study-card" id="studyCard">
+  <div class="study-eyebrow" id="studyDateLabel">TODAY</div>
+  <div class="study-total-row">
+    <span class="study-total-num" id="studyTotalNum">0</span>
+    <span class="study-total-label">dk çalıştın bugün</span>
+  </div>
+  <div class="study-form">
+    <input class="study-subject-input" id="studySubject" type="text" placeholder="Ders/konu…" autocomplete="off">
+    <input class="study-minutes-input" id="studyMinutes" type="number" min="1" max="600" placeholder="dk">
+    <button class="study-log-btn" id="studyLogBtn" type="button">Log</button>
+  </div>
+  <ul class="study-list" id="studyList"></ul>
+  <div class="empty-state" id="studyEmptyState">Henüz bugün çalışma loglanmadı.</div>
+</div>
+
+<div class="study-modal-bg" id="studySummaryModalBg">
+  <div class="study-modal">
+    <div class="study-modal-emoji">📚</div>
+    <div class="study-modal-title">Kaydedildi</div>
+    <div class="study-modal-motivation" id="studySummaryMotivation"></div>
+    <div class="study-modal-total" id="studySummaryTotal">0 dk</div>
+    <div class="study-modal-total-label">bugün toplam</div>
+    <button class="study-modal-close-btn" id="studySummaryCloseBtn" type="button">Tamam</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_K1-mePuh2s7ECxxUdUZtqQ_KY3brvIL';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const APP_KEY = 'study';
+
+// ─── DATES (same 6 AM day-boundary logic as the other pages) ────────────────
+function toDateKey(dt) {
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
+function getActiveDateString() {
+  const now = new Date();
+  if (now.getHours() < 6) now.setDate(now.getDate() - 1);
+  return toDateKey(now);
+}
+function formatDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────
+function storeGet(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function storeSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+const SESSIONS_KEY = 'study_sessions';
+function sessionsLoad() {
+  return storeGet(SESSIONS_KEY) || [];
+}
+function sessionsSave(arr) { storeSet(SESSIONS_KEY, arr); }
+
+const STUDY_MOTIVATION = [
+  'İyi gidiyorsun 📚',
+  'Bir seans daha bitti.',
+  'İstikrar bu şekilde kazanılır.',
+  'Devam et, birikiyor.',
+  'Bugün de çalıştın.',
+  'Emek boşa gitmiyor.'
+];
+
+function todaySessions() {
+  const today = getActiveDateString();
+  return sessionsLoad().filter(s => s.date === today);
+}
+
+function renderStudy() {
+  const today = getActiveDateString();
+  document.getElementById('studyDateLabel').textContent = 'TODAY — ' + formatDate(today);
+
+  const sessions = todaySessions();
+  const totalMin = sessions.reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+  document.getElementById('studyTotalNum').textContent = totalMin;
+
+  const list = document.getElementById('studyList');
+  const empty = document.getElementById('studyEmptyState');
+  list.innerHTML = '';
+  if (!sessions.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const all = sessionsLoad();
+  sessions.forEach((s) => {
+    const li = document.createElement('li');
+    li.className = 'study-item';
+
+    const textEl = document.createElement('span');
+    textEl.className = 'study-item-text';
+    textEl.textContent = s.subject || 'Çalışma';
+    li.appendChild(textEl);
+
+    const minEl = document.createElement('span');
+    minEl.className = 'study-item-minutes';
+    minEl.textContent = s.minutes + ' dk';
+    li.appendChild(minEl);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'study-item-del';
+    delBtn.type = 'button';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', () => {
+      const idx = all.indexOf(s);
+      if (idx >= 0) all.splice(idx, 1);
+      sessionsSave(all);
+      renderStudy();
+    });
+    li.appendChild(delBtn);
+
+    list.appendChild(li);
+  });
+}
+
+function showStudySummary(totalMin) {
+  document.getElementById('studySummaryMotivation').textContent =
+    STUDY_MOTIVATION[Math.floor(Math.random() * STUDY_MOTIVATION.length)];
+  document.getElementById('studySummaryTotal').textContent = totalMin + ' dk';
+  document.getElementById('studySummaryModalBg').classList.add('show');
+}
+document.getElementById('studySummaryCloseBtn').addEventListener('click', () => {
+  document.getElementById('studySummaryModalBg').classList.remove('show');
+});
+document.getElementById('studySummaryModalBg').addEventListener('click', (e) => {
+  if (e.target.id === 'studySummaryModalBg') document.getElementById('studySummaryModalBg').classList.remove('show');
+});
+
+document.getElementById('studyLogBtn').addEventListener('click', () => {
+  const subjectInput = document.getElementById('studySubject');
+  const minutesInput = document.getElementById('studyMinutes');
+  const subject = subjectInput.value.trim();
+  const minutes = parseInt(minutesInput.value, 10);
+  if (!minutes || minutes <= 0) return;
+
+  const all = sessionsLoad();
+  all.push({ date: getActiveDateString(), subject, minutes, at: new Date().toISOString() });
+  sessionsSave(all);
+
+  subjectInput.value = '';
+  minutesInput.value = '';
+  renderStudy();
+
+  const totalMin = todaySessions().reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+  showStudySummary(totalMin);
+});
+
+// ─── SUPABASE SYNC (same read-merge-write pattern as the other pages) ───────
+const SYNC_EXACT_KEYS = ['study_sessions'];
+function isSyncedKey(key) { return SYNC_EXACT_KEYS.includes(key); }
+
+const rawSetItem = localStorage.setItem.bind(localStorage);
+const rawRemoveItem = localStorage.removeItem.bind(localStorage);
+
+function snapshotSyncedState() {
+  const out = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (isSyncedKey(k)) out[k] = localStorage.getItem(k);
+  }
+  return out;
+}
+function applySyncedState(state) {
+  const current = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (isSyncedKey(k)) current.push(k);
+  }
+  for (const k of current) if (!(k in state)) rawRemoveItem(k);
+  for (const [k, v] of Object.entries(state)) rawSetItem(k, v);
+}
+
+let lastSyncedJson = null;
+let pushTimer = null;
+
+function schedulePush() {
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushNow, 250);
+}
+
+async function pushNow() {
+  pushTimer = null;
+  const state = snapshotSyncedState();
+  const json = JSON.stringify(state);
+  if (json === lastSyncedJson) return;
+  try {
+    const { data: row } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+    const merged = Object.assign({}, (row && row.data) || {}, state);
+    const { error } = await sb.from('app_state')
+      .upsert({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() });
+    if (error) console.error('Sync push error:', error);
+    else lastSyncedJson = json;
+  } catch (e) { console.error('Sync push failed:', e); }
+}
+
+localStorage.setItem = function (key, value) {
+  rawSetItem(key, value);
+  try { if (isSyncedKey(key)) schedulePush(); } catch (e) { console.error(e); }
+};
+localStorage.removeItem = function (key) {
+  rawRemoveItem(key);
+  try { if (isSyncedKey(key)) schedulePush(); } catch (e) { console.error(e); }
+};
+
+function applyRemote(state) {
+  applySyncedState(state);
+  renderStudy();
+}
+
+async function pullAndApply() {
+  const { data: row, error } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+  if (error) { console.error('Sync pull error:', error); return; }
+  if (!row || !row.data || Object.keys(row.data).length === 0) {
+    const local = snapshotSyncedState();
+    if (Object.keys(local).length > 0) {
+      lastSyncedJson = JSON.stringify(local);
+      await sb.from('app_state').upsert({ key: APP_KEY, data: local, updated_at: new Date().toISOString() });
+    }
+    return;
+  }
+  lastSyncedJson = JSON.stringify(row.data);
+  applyRemote(row.data);
+}
+
+function subscribeRealtime() {
+  sb.channel('app_state_' + APP_KEY)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'app_state', filter: `key=eq.${APP_KEY}` },
+      (payload) => {
+        const newState = payload.new && payload.new.data;
+        if (!newState) return;
+        const json = JSON.stringify(newState);
+        if (json === lastSyncedJson) return;
+        lastSyncedJson = json;
+        applyRemote(newState);
+      })
+    .subscribe();
+}
+
+function flushSync() {
+  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+  const state = snapshotSyncedState();
+  const json = JSON.stringify(state);
+  if (json === lastSyncedJson) return;
+  lastSyncedJson = json;
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/app_state?key=eq.${APP_KEY}&select=data`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      keepalive: true
+    })
+      .then(r => r.json())
+      .catch(() => [])
+      .then(rows => {
+        const remote = (rows && rows[0] && rows[0].data) || {};
+        const merged = Object.assign({}, remote, state);
+        return fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() })
+        });
+      })
+      .catch(() => {});
+  } catch (e) { console.error('Sync flush failed:', e); }
+}
+
+window.addEventListener('pagehide', flushSync);
+window.addEventListener('beforeunload', flushSync);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSync(); });
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(async () => {
+  renderStudy();
+  await pullAndApply();
+  subscribeRealtime();
+})();
+</script>
+
+</body>
+</html>
