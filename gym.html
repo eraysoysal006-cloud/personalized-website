@@ -884,6 +884,59 @@ img, video, canvas, svg { max-width: 100%; }
 }
 .po-tw-empty.hidden { display: none; }
 
+.po-cardio-form {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.po-cardio-select {
+  flex: 1;
+  padding: 11px 10px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.28);
+  color: var(--text-1);
+  border-radius: 10px; font-family: inherit; font-size: 13px; font-weight: 600;
+}
+.po-cardio-minutes {
+  width: 64px;
+  padding: 11px 8px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.28);
+  color: var(--text-1);
+  border-radius: 10px; font-family: inherit;
+  font-size: 15px; font-weight: 700; text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.po-cardio-minutes::-webkit-outer-spin-button,
+.po-cardio-minutes::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.po-cardio-form .po-btn-primary { flex-shrink: 0; padding: 0 16px; }
+
+.po-cardio-list { list-style: none; }
+.po-cardio-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.po-cardio-row:last-child { border-bottom: none; }
+.po-cardio-row-label { flex: 1; color: var(--text-1); }
+.po-cardio-row-meta {
+  color: var(--text-3); font-size: 11.5px; font-variant-numeric: tabular-nums;
+}
+.po-cardio-row-del {
+  background: none; border: none; color: var(--text-3);
+  font-size: 16px; cursor: pointer; padding: 2px 4px; line-height: 1;
+}
+.po-cardio-empty {
+  text-align: center; padding: 10px 0;
+  font-size: 12px; color: var(--text-3); font-style: italic;
+}
+.po-cardio-empty.hidden { display: none; }
+.po-cardio-total {
+  margin-top: 8px; font-size: 12px; font-weight: 700;
+  color: var(--good, #5ee6a0); text-align: right;
+}
+.po-cardio-total.hidden { display: none; }
+
 .po-tw-past-toggle {
   width: 100%; margin-top: 10px;
   display: flex; align-items: center; justify-content: space-between;
@@ -1692,6 +1745,26 @@ img, video, canvas, svg { max-width: 100%; }
         <span class="po-tw-past-arrow" id="poTwPastArrow">▾</span>
       </button>
       <div class="po-tw-past-body" id="poTwPastBody" style="display:none"></div>
+    </div>
+
+    <!-- Cardio — separate from weight-lifting sets: pick an activity + how
+         long, get an estimated calorie burn (MET formula using the latest
+         logged body weight). Shown next to Nutrition as its own line, never
+         silently subtracted from the food-calorie total. -->
+    <div class="po-sub-section">
+      <div class="po-sub-title">Cardio</div>
+      <div class="po-cardio-form">
+        <select class="po-cardio-select" id="cardioType">
+          <option value="walk">🚶 Yürüyüş</option>
+          <option value="run">🏃 Koşu</option>
+          <option value="bike">🚴 Bisiklet</option>
+        </select>
+        <input class="po-cardio-minutes" id="cardioMinutes" type="number" min="1" max="600" placeholder="dk">
+        <button class="po-btn-primary" id="cardioLogBtn" type="button">Log</button>
+      </div>
+      <ul class="po-cardio-list" id="cardioList"></ul>
+      <div class="po-cardio-empty" id="cardioEmpty">No cardio logged today.</div>
+      <div class="po-cardio-total" id="cardioTotal"></div>
     </div>
   </div>
 </div>
@@ -2907,6 +2980,87 @@ img, video, canvas, svg { max-width: 100%; }
   const WT_KEY = 'po_coach_weights';
   const PHOTO_KEY = 'po_coach_photos';
 
+  // ----- Cardio: separate from weight-lifting sets, estimates calorie burn
+  // via a standard MET formula using the latest logged body weight. -----
+  const CARDIO_KEY = 'po_coach_cardio';
+  const CARDIO_TYPES = {
+    walk: { label: '🚶 Yürüyüş', met: 3.5 },
+    run:  { label: '🏃 Koşu', met: 8.5 },
+    bike: { label: '🚴 Bisiklet', met: 7 },
+  };
+  function cardioLoad() {
+    try { const raw = localStorage.getItem(CARDIO_KEY); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch (e) { return []; }
+  }
+  function cardioSave(arr) {
+    try { localStorage.setItem(CARDIO_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function cardioLatestWeightKg() {
+    const entries = wtLoad();
+    if (!entries.length) return 75; // reasonable default until a weight is logged
+    const w = entries[entries.length - 1].weight;
+    return state.units === 'lb' ? w / 2.20462 : w;
+  }
+  function cardioEstimateCalories(type, minutes) {
+    const met = (CARDIO_TYPES[type] || CARDIO_TYPES.walk).met;
+    const weightKg = cardioLatestWeightKg();
+    return Math.round((met * 3.5 * weightKg / 200) * minutes);
+  }
+  function cardioTodayEntries() {
+    const todayKey = wtDateKey(new Date());
+    return cardioLoad().filter(e => e.date === todayKey);
+  }
+  function renderCardio() {
+    const list = $('cardioList');
+    const empty = $('cardioEmpty');
+    const totalEl = $('cardioTotal');
+    const entries = cardioTodayEntries();
+    const all = cardioLoad();
+    list.innerHTML = '';
+    if (!entries.length) {
+      empty.classList.remove('hidden');
+      totalEl.classList.add('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    entries.forEach((e) => {
+      const li = document.createElement('li');
+      li.className = 'po-cardio-row';
+      const label = document.createElement('span');
+      label.className = 'po-cardio-row-label';
+      label.textContent = (CARDIO_TYPES[e.type] || CARDIO_TYPES.walk).label;
+      const meta = document.createElement('span');
+      meta.className = 'po-cardio-row-meta';
+      meta.textContent = e.minutes + ' dk · ' + e.calories + ' kcal';
+      const del = document.createElement('button');
+      del.className = 'po-cardio-row-del';
+      del.type = 'button';
+      del.textContent = '×';
+      del.addEventListener('click', () => {
+        const idx = all.indexOf(e);
+        if (idx >= 0) all.splice(idx, 1);
+        cardioSave(all);
+        renderCardio();
+      });
+      li.appendChild(label); li.appendChild(meta); li.appendChild(del);
+      list.appendChild(li);
+    });
+    const totalCal = entries.reduce((s, e) => s + e.calories, 0);
+    totalEl.textContent = '🔥 -' + totalCal + ' kcal bugün';
+    totalEl.classList.remove('hidden');
+  }
+  $('cardioLogBtn').addEventListener('click', () => {
+    const type = $('cardioType').value;
+    const minutes = parseInt($('cardioMinutes').value, 10);
+    if (!minutes || minutes <= 0) return;
+    const calories = cardioEstimateCalories(type, minutes);
+    const all = cardioLoad();
+    all.push({ date: wtDateKey(new Date()), type, minutes, calories, at: new Date().toISOString() });
+    cardioSave(all);
+    $('cardioMinutes').value = '';
+    renderCardio();
+  });
+
   function wtLoad() {
     try {
       const raw = localStorage.getItem(WT_KEY);
@@ -3546,6 +3700,7 @@ img, video, canvas, svg { max-width: 100%; }
   renderAll();
   wtRender();
   photosRender();
+  renderCardio();
 
   // ============================================================
   // CLOUD SYNC via Supabase  (OPTIONAL — leave blank for local-only)
@@ -3568,7 +3723,7 @@ img, video, canvas, svg { max-width: 100%; }
   const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_K1-mePuh2s7ECxxUdUZtqQ_KY3brvIL';
   const APP_KEY = 'gym';
-  const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
+  const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_cardio'];
 
   let pcSupa = null;
   let pcPushTimer = null;
@@ -3632,6 +3787,7 @@ img, video, canvas, svg { max-width: 100%; }
     try { renderAll(); } catch {}
     try { wtRender(); } catch {}
     try { photosRender(); } catch {}
+    try { renderCardio(); } catch {}
   }
 
   function pcApplyRemoteState(remote) {
