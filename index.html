@@ -723,15 +723,35 @@
   .gm-bar:empty { display: none; }
 
   .gm-bar-seg {
+    position: relative;
     flex: 1;
     border-radius: 3px;
     background: rgba(255,255,255,0.10);
-    transition: background 0.3s, box-shadow 0.3s;
+    overflow: hidden;
   }
 
-  .gm-bar-seg-done {
+  .gm-bar-seg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
     background: #5C7FEA;
     box-shadow: 0 0 6px rgba(92,127,234,0.40);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .gm-bar-seg-done::after {
+    transform: scaleX(1);
+  }
+
+  @keyframes barSegSweep {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  .gm-bar-seg-done.gm-bar-seg-animate::after {
+    animation: barSegSweep 0.4s cubic-bezier(0.45, 0, 0.55, 1) both;
+    animation-delay: var(--seg-delay, 0s);
   }
 
   /* GOAL LIST */
@@ -2275,6 +2295,7 @@ function toggleSubItem(h, subId, date, tileEl) {
 
   if (!wasComplete && nowComplete && tileEl) {
     tileEl.classList.add('is-collapsing');
+    justToggledHabitId = h.id;
     setTimeout(loadHabits, 480);
   } else {
     loadHabits();
@@ -2316,10 +2337,17 @@ function renderHabitsReminder(defs, date, nowHour) {
   el.classList.remove('hidden');
 }
 
+// Set right before a delayed loadHabits() call from a completion toggle, so
+// that tile's weekly bar sweeps in left-to-right instead of just appearing —
+// every other render (60s poll, other syncs) draws segments with no animation.
+let justToggledHabitId = null;
+
 function loadHabits() {
   const date = getActiveDateString();
   const defs = storeGet('habits:definitions') || [];
   const nowHour = getActiveHour();
+  const animateHabitId = justToggledHabitId;
+  justToggledHabitId = null;
 
   const grid = document.getElementById('habitsGrid');
   const emptyEl = document.getElementById('habitsEmptyState');
@@ -2383,6 +2411,7 @@ function loadHabits() {
           logNow[h.id] = true;
           storeSet('habits:log:' + date, logNow);
           cbVisual.classList.add('goal-cb-pop');
+          justToggledHabitId = h.id;
           setTimeout(loadHabits, 260);
           return;
         }
@@ -2468,9 +2497,15 @@ function loadHabits() {
 
     const bar = document.createElement('div');
     bar.className = 'gm-bar habit-tile-bar';
+    const animateBar = h.id === animateHabitId;
     for (let i = 0; i < target; i++) {
       const seg = document.createElement('div');
-      seg.className = 'gm-bar-seg' + (i < weekCount ? ' gm-bar-seg-done' : '');
+      const isDone = i < weekCount;
+      seg.className = 'gm-bar-seg' + (isDone ? ' gm-bar-seg-done' : '');
+      if (animateBar && isDone) {
+        seg.classList.add('gm-bar-seg-animate');
+        seg.style.setProperty('--seg-delay', (i * 0.06) + 's');
+      }
       bar.appendChild(seg);
     }
     tile.appendChild(bar);
