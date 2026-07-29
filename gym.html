@@ -1765,12 +1765,14 @@ img, video, canvas, svg { max-width: 100%; }
          logged body weight). Shown next to Nutrition as its own line, never
          silently subtracted from the food-calorie total. -->
     <div class="po-sub-section">
-      <div class="po-sub-title">Cardio</div>
+      <div class="po-sub-title">Aktivite</div>
       <div class="po-cardio-form">
         <select class="po-cardio-select" id="cardioType">
           <option value="walk">🚶 Yürüyüş</option>
           <option value="run">🏃 Koşu</option>
           <option value="bike">🚴 Bisiklet</option>
+          <option value="yoga">🧘 Yoga</option>
+          <option value="pilates">🤸 Pilates</option>
         </select>
         <input class="po-cardio-minutes" id="cardioMinutes" type="number" min="1" max="600" placeholder="dk">
         <button class="po-btn-primary" id="cardioLogBtn" type="button">Log</button>
@@ -2997,9 +2999,11 @@ img, video, canvas, svg { max-width: 100%; }
   // via a standard MET formula using the latest logged body weight. -----
   const CARDIO_KEY = 'po_coach_cardio';
   const CARDIO_TYPES = {
-    walk: { label: '🚶 Yürüyüş', met: 3.5 },
-    run:  { label: '🏃 Koşu', met: 8.5 },
-    bike: { label: '🚴 Bisiklet', met: 7 },
+    walk:    { label: '🚶 Yürüyüş', met: 3.5 },
+    run:     { label: '🏃 Koşu', met: 8.5 },
+    bike:    { label: '🚴 Bisiklet', met: 7 },
+    yoga:    { label: '🧘 Yoga', met: 3 },
+    pilates: { label: '🤸 Pilates', met: 3 },
   };
   function cardioLoad() {
     try { const raw = localStorage.getItem(CARDIO_KEY); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
