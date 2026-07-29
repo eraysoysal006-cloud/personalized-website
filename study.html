@@ -188,6 +188,134 @@
     font-style: italic;
   }
 
+  /* WEEKLY SCHEDULE */
+  .schedule-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .schedule-day { min-width: 0; }
+  .schedule-day-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+  .schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,0.035);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .schedule-row-time {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--success);
+    flex-shrink: 0;
+  }
+  .schedule-row-course {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* TIMER (stopwatch + pomodoro) */
+  .timer-mode-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .timer-mode-btn {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 9px;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .timer-mode-btn.active {
+    background: linear-gradient(180deg, #7B9BF5 0%, #5C7FEA 100%);
+    color: #08090B;
+  }
+  .timer-display {
+    font-family: var(--font-mono);
+    font-size: 46px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    letter-spacing: -0.02em;
+    margin: 8px 0 2px;
+  }
+  .pomodoro-phase-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+  .timer-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .timer-controls .study-log-btn { flex: 1 1 100px; min-width: 0; }
+  .pomodoro-settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .pomodoro-settings label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 0;
+  }
+  .pomodoro-settings input {
+    width: 54px;
+    min-width: 0;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+  .pomodoro-settings input::-webkit-outer-spin-button,
+  .pomodoro-settings input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
   /* SUMMARY POPUP */
   .study-modal-bg {
     display: none;
@@ -307,6 +435,43 @@
 
 <h1 class="dash-title">Study</h1>
 
+<div class="study-card" id="scheduleCard">
+  <div class="study-eyebrow">Haftalık Program</div>
+  <div class="schedule-grid" id="scheduleGrid"></div>
+  <button class="study-log-btn" id="scheduleAddBtn" type="button" style="width:100%;margin-top:12px;">+ Ders ekle</button>
+</div>
+
+<div class="study-card" id="timerCard">
+  <div class="study-eyebrow">Zamanlayıcı</div>
+  <div class="timer-mode-toggle">
+    <button class="timer-mode-btn active" id="timerModeStopwatch" type="button">Kronometre</button>
+    <button class="timer-mode-btn" id="timerModePomodoro" type="button">Pomodoro</button>
+  </div>
+  <input class="study-subject-input" id="timerSubject" type="text" placeholder="Ders/konu…" style="width:100%;margin-bottom:10px;" autocomplete="off">
+
+  <div id="stopwatchView">
+    <div class="timer-display" id="stopwatchDisplay">00:00</div>
+    <div class="timer-controls">
+      <button class="study-log-btn" id="stopwatchStartBtn" type="button">Başlat</button>
+      <button class="study-log-btn hidden" id="stopwatchStopBtn" type="button">Bitir &amp; Kaydet</button>
+    </div>
+  </div>
+
+  <div id="pomodoroView" class="hidden">
+    <div class="timer-display" id="pomodoroDisplay">25:00</div>
+    <div class="pomodoro-phase-label" id="pomodoroPhaseLabel">Çalışma</div>
+    <div class="timer-controls">
+      <button class="study-log-btn" id="pomodoroStartBtn" type="button">Başlat</button>
+      <button class="study-log-btn hidden" id="pomodoroPauseBtn" type="button">Duraklat</button>
+      <button class="study-log-btn hidden" id="pomodoroResetBtn" type="button">Sıfırla</button>
+    </div>
+    <div class="pomodoro-settings">
+      <label>Çalışma <input type="number" id="pomodoroWorkMin" min="1" max="120" value="25"> dk</label>
+      <label>Mola <input type="number" id="pomodoroBreakMin" min="1" max="60" value="5"> dk</label>
+    </div>
+  </div>
+</div>
+
 <div class="study-card" id="studyCard">
   <div class="study-eyebrow" id="studyDateLabel">TODAY</div>
   <div class="study-total-row">
@@ -330,6 +495,24 @@
     <div class="study-modal-total" id="studySummaryTotal">0 dk</div>
     <div class="study-modal-total-label">bugün toplam</div>
     <button class="study-modal-close-btn" id="studySummaryCloseBtn" type="button">Tamam</button>
+  </div>
+</div>
+
+<div class="study-modal-bg" id="scheduleAddModalBg">
+  <div class="study-modal" style="text-align:left;">
+    <div class="study-modal-title" style="margin-bottom:14px;">Ders ekle</div>
+    <select class="study-subject-input" id="scheduleAddDay" style="width:100%;margin-bottom:10px;">
+      <option value="Mon">Pazartesi</option>
+      <option value="Tue">Salı</option>
+      <option value="Wed">Çarşamba</option>
+      <option value="Thu">Perşembe</option>
+      <option value="Fri">Cuma</option>
+      <option value="Sat">Cumartesi</option>
+      <option value="Sun">Pazar</option>
+    </select>
+    <input class="study-subject-input" id="scheduleAddTime" type="time" style="width:100%;margin-bottom:10px;">
+    <input class="study-subject-input" id="scheduleAddCourse" type="text" placeholder="Ders adı" style="width:100%;margin-bottom:16px;" autocomplete="off">
+    <button class="study-modal-close-btn" id="scheduleAddSaveBtn" type="button">Ekle</button>
   </div>
 </div>
 
@@ -461,8 +644,188 @@ document.getElementById('studyLogBtn').addEventListener('click', () => {
   showStudySummary(totalMin);
 });
 
+// ─── WEEKLY SCHEDULE ──────────────────────────────────────────────────────
+const SCHEDULE_KEY = 'study_schedule';
+function scheduleLoad() { return storeGet(SCHEDULE_KEY) || []; }
+function scheduleSave(arr) { storeSet(SCHEDULE_KEY, arr); }
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_LABELS = { Mon: 'Pazartesi', Tue: 'Salı', Wed: 'Çarşamba', Thu: 'Perşembe', Fri: 'Cuma', Sat: 'Cumartesi', Sun: 'Pazar' };
+
+function renderSchedule() {
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = '';
+  const all = scheduleLoad();
+  if (!all.length) {
+    grid.innerHTML = '<div class="empty-state">Henüz program eklenmedi.</div>';
+    return;
+  }
+  const byDay = {};
+  all.forEach(c => { (byDay[c.day] = byDay[c.day] || []).push(c); });
+  DAY_ORDER.forEach(day => {
+    if (!byDay[day] || !byDay[day].length) return;
+    const dayEntries = byDay[day].slice().sort((a, b) => a.time.localeCompare(b.time));
+    const dayEl = document.createElement('div');
+    dayEl.className = 'schedule-day';
+    const dayLabel = document.createElement('div');
+    dayLabel.className = 'schedule-day-label';
+    dayLabel.textContent = DAY_LABELS[day];
+    dayEl.appendChild(dayLabel);
+    dayEntries.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'schedule-row';
+      const timeEl = document.createElement('span');
+      timeEl.className = 'schedule-row-time';
+      timeEl.textContent = c.time;
+      const courseEl = document.createElement('span');
+      courseEl.className = 'schedule-row-course';
+      courseEl.textContent = c.course;
+      const delBtn = document.createElement('button');
+      delBtn.className = 'study-item-del';
+      delBtn.type = 'button';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        const idx = all.indexOf(c);
+        if (idx >= 0) all.splice(idx, 1);
+        scheduleSave(all);
+        renderSchedule();
+      });
+      row.appendChild(timeEl); row.appendChild(courseEl); row.appendChild(delBtn);
+      dayEl.appendChild(row);
+    });
+    grid.appendChild(dayEl);
+  });
+}
+
+document.getElementById('scheduleAddBtn').addEventListener('click', () => {
+  document.getElementById('scheduleAddModalBg').classList.add('show');
+});
+document.getElementById('scheduleAddModalBg').addEventListener('click', (e) => {
+  if (e.target.id === 'scheduleAddModalBg') document.getElementById('scheduleAddModalBg').classList.remove('show');
+});
+document.getElementById('scheduleAddSaveBtn').addEventListener('click', () => {
+  const day = document.getElementById('scheduleAddDay').value;
+  const time = document.getElementById('scheduleAddTime').value;
+  const course = document.getElementById('scheduleAddCourse').value.trim();
+  if (!time || !course) return;
+  const all = scheduleLoad();
+  all.push({ day, time, course });
+  scheduleSave(all);
+  document.getElementById('scheduleAddTime').value = '';
+  document.getElementById('scheduleAddCourse').value = '';
+  document.getElementById('scheduleAddModalBg').classList.remove('show');
+  renderSchedule();
+});
+
+// ─── TIMER: stopwatch + configurable pomodoro ────────────────────────────
+function timerFmt(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+function logStudyMinutes(minutes) {
+  if (minutes <= 0) return;
+  const subject = document.getElementById('timerSubject').value.trim();
+  const all = sessionsLoad();
+  all.push({ date: getActiveDateString(), subject, minutes, at: new Date().toISOString() });
+  sessionsSave(all);
+  renderStudy();
+}
+
+document.getElementById('timerModeStopwatch').addEventListener('click', () => {
+  document.getElementById('timerModeStopwatch').classList.add('active');
+  document.getElementById('timerModePomodoro').classList.remove('active');
+  document.getElementById('stopwatchView').classList.remove('hidden');
+  document.getElementById('pomodoroView').classList.add('hidden');
+});
+document.getElementById('timerModePomodoro').addEventListener('click', () => {
+  document.getElementById('timerModePomodoro').classList.add('active');
+  document.getElementById('timerModeStopwatch').classList.remove('active');
+  document.getElementById('pomodoroView').classList.remove('hidden');
+  document.getElementById('stopwatchView').classList.add('hidden');
+});
+
+// Stopwatch
+let stopwatchInterval = null;
+let stopwatchStartedAt = null;
+document.getElementById('stopwatchStartBtn').addEventListener('click', () => {
+  stopwatchStartedAt = Date.now();
+  stopwatchInterval = setInterval(() => {
+    document.getElementById('stopwatchDisplay').textContent = timerFmt(Math.floor((Date.now() - stopwatchStartedAt) / 1000));
+  }, 1000);
+  document.getElementById('stopwatchStartBtn').classList.add('hidden');
+  document.getElementById('stopwatchStopBtn').classList.remove('hidden');
+});
+document.getElementById('stopwatchStopBtn').addEventListener('click', () => {
+  clearInterval(stopwatchInterval);
+  const elapsedSec = Math.floor((Date.now() - stopwatchStartedAt) / 1000);
+  logStudyMinutes(Math.max(1, Math.round(elapsedSec / 60)));
+  const totalMin = todaySessions().reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+  showStudySummary(totalMin);
+  document.getElementById('stopwatchDisplay').textContent = '00:00';
+  document.getElementById('stopwatchStartBtn').classList.remove('hidden');
+  document.getElementById('stopwatchStopBtn').classList.add('hidden');
+});
+
+// Pomodoro — work/break minutes are user-adjustable (default 25/5)
+let pomodoroInterval = null;
+let pomodoroRemaining = 25 * 60;
+let pomodoroPhase = 'work';
+let pomodoroRunning = false;
+
+function pomodoroWorkSec() { return Math.max(1, parseInt(document.getElementById('pomodoroWorkMin').value, 10) || 25) * 60; }
+function pomodoroBreakSec() { return Math.max(1, parseInt(document.getElementById('pomodoroBreakMin').value, 10) || 5) * 60; }
+function pomodoroUpdateDisplay() {
+  document.getElementById('pomodoroDisplay').textContent = timerFmt(pomodoroRemaining);
+  document.getElementById('pomodoroPhaseLabel').textContent = pomodoroPhase === 'work' ? 'Çalışma' : 'Mola';
+}
+function pomodoroTick() {
+  pomodoroRemaining--;
+  if (pomodoroRemaining <= 0) {
+    if (navigator.vibrate) navigator.vibrate(pomodoroPhase === 'work' ? [200, 100, 200] : 200);
+    if (pomodoroPhase === 'work') {
+      logStudyMinutes(Math.round(pomodoroWorkSec() / 60));
+      pomodoroPhase = 'break';
+      pomodoroRemaining = pomodoroBreakSec();
+    } else {
+      pomodoroPhase = 'work';
+      pomodoroRemaining = pomodoroWorkSec();
+    }
+  }
+  pomodoroUpdateDisplay();
+}
+document.getElementById('pomodoroStartBtn').addEventListener('click', () => {
+  if (pomodoroRunning) return;
+  if (pomodoroRemaining <= 0) pomodoroRemaining = pomodoroWorkSec();
+  pomodoroInterval = setInterval(pomodoroTick, 1000);
+  pomodoroRunning = true;
+  document.getElementById('pomodoroStartBtn').classList.add('hidden');
+  document.getElementById('pomodoroPauseBtn').classList.remove('hidden');
+  document.getElementById('pomodoroResetBtn').classList.remove('hidden');
+});
+document.getElementById('pomodoroPauseBtn').addEventListener('click', () => {
+  clearInterval(pomodoroInterval);
+  pomodoroRunning = false;
+  document.getElementById('pomodoroPauseBtn').classList.add('hidden');
+  document.getElementById('pomodoroStartBtn').classList.remove('hidden');
+  document.getElementById('pomodoroStartBtn').textContent = 'Devam';
+});
+document.getElementById('pomodoroResetBtn').addEventListener('click', () => {
+  clearInterval(pomodoroInterval);
+  pomodoroRunning = false;
+  pomodoroPhase = 'work';
+  pomodoroRemaining = pomodoroWorkSec();
+  pomodoroUpdateDisplay();
+  document.getElementById('pomodoroStartBtn').classList.remove('hidden');
+  document.getElementById('pomodoroStartBtn').textContent = 'Başlat';
+  document.getElementById('pomodoroPauseBtn').classList.add('hidden');
+  document.getElementById('pomodoroResetBtn').classList.add('hidden');
+});
+document.getElementById('pomodoroWorkMin').addEventListener('change', () => {
+  if (!pomodoroRunning && pomodoroPhase === 'work') { pomodoroRemaining = pomodoroWorkSec(); pomodoroUpdateDisplay(); }
+});
+pomodoroUpdateDisplay();
+
 // ─── SUPABASE SYNC (same read-merge-write pattern as the other pages) ───────
-const SYNC_EXACT_KEYS = ['study_sessions'];
+const SYNC_EXACT_KEYS = ['study_sessions', 'study_schedule'];
 function isSyncedKey(key) { return SYNC_EXACT_KEYS.includes(key); }
 
 const rawSetItem = localStorage.setItem.bind(localStorage);
@@ -521,6 +884,7 @@ localStorage.removeItem = function (key) {
 function applyRemote(state) {
   applySyncedState(state);
   renderStudy();
+  renderSchedule();
 }
 
 async function pullAndApply() {
@@ -592,6 +956,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // ─── INIT ────────────────────────────────────────────────────────────────────
 (async () => {
   renderStudy();
+  renderSchedule();
   await pullAndApply();
   subscribeRealtime();
 })();
