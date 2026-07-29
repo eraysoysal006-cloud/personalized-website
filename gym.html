@@ -885,10 +885,11 @@ img, video, canvas, svg { max-width: 100%; }
 .po-tw-empty.hidden { display: none; }
 
 .po-cardio-form {
-  display: flex; gap: 8px; margin-bottom: 12px;
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; min-width: 0;
 }
 .po-cardio-select {
-  flex: 1;
+  flex: 1 1 100px;
+  min-width: 0;
   padding: 11px 10px;
   border: 1px solid var(--border);
   background: rgba(0,0,0,0.28);
@@ -897,6 +898,8 @@ img, video, canvas, svg { max-width: 100%; }
 }
 .po-cardio-minutes {
   width: 64px;
+  flex-shrink: 0;
+  min-width: 0;
   padding: 11px 8px;
   border: 1px solid var(--border);
   background: rgba(0,0,0,0.28);
@@ -918,7 +921,7 @@ img, video, canvas, svg { max-width: 100%; }
   font-size: 13px;
 }
 .po-cardio-row:last-child { border-bottom: none; }
-.po-cardio-row-label { flex: 1; color: var(--text-1); }
+.po-cardio-row-label { flex: 1; min-width: 0; color: var(--text-1); }
 .po-cardio-row-meta {
   color: var(--text-3); font-size: 11.5px; font-variant-numeric: tabular-nums;
 }
