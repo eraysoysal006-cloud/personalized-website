@@ -1690,13 +1690,10 @@
 </div><!-- /.dash-grid -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="shared-auth.js"></script>
 <script>
-const ANTHROPIC_API_KEY = '';
-
-// ─── SUPABASE ───────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_K1-mePuh2s7ECxxUdUZtqQ_KY3brvIL';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ─── SUPABASE (client + auth owned by shared-auth.js) ────────────────────────
+const sb = window.sb;
 const APP_KEY = 'dashboard';
 
 // ─── STORAGE (localStorage; mirrored to Supabase by the sync engine below) ──
@@ -2858,10 +2855,6 @@ function financeImportCSV(text, accId, msgEl) {
 }
 
 async function financeImportAI(dataUrl, mimeType, accId, msgEl) {
-  if (!ANTHROPIC_API_KEY) {
-    showStatus(msgEl, 'PDF/photo import needs an Anthropic API key — paste CSV instead for now.', true, 6000);
-    return;
-  }
   const db = financeLoad();
   const acc = db.accounts.find(a => a.id === accId);
   if (!acc) { showStatus(msgEl, 'Add an account first.', true); return; }
@@ -2874,13 +2867,11 @@ async function financeImportAI(dataUrl, mimeType, accId, msgEl) {
     : { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } };
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/anthropic', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Authorization': 'Bearer ' + window.pcAccessToken
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
@@ -3096,13 +3087,11 @@ function showStatus(el, msg, isError, ms) {
 }
 
 async function polishGoal(text) {
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('/api/anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Authorization': 'Bearer ' + window.pcAccessToken
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
@@ -3140,11 +3129,6 @@ function makeAddHandlers(inputId, addBtnId, polishBtnId, key, statusId, reload) 
   polishBtn.addEventListener('click', async () => {
     const text = input.value.trim();
     if (!text) return;
-    if (!ANTHROPIC_API_KEY) {
-      addGoal(text);
-      showStatus(statusEl, 'Polish needs an Anthropic API key — added as-typed.');
-      return;
-    }
     polishBtn.disabled = true;
     polishBtn.textContent = '…';
     try {
@@ -3261,19 +3245,19 @@ async function pushNow() {
     // retried on conflict so a concurrent writer (another tab/page hitting
     // the same row) can never get silently clobbered by a stale merge.
     for (let attempt = 0; attempt < 5; attempt++) {
-      const { data: row } = await sb.from('app_state').select('data, updated_at').eq('key', APP_KEY).maybeSingle();
+      const { data: row } = await sb.from('app_state').select('data, updated_at').eq('key', APP_KEY).eq('user_id', window.pcUserId).maybeSingle();
       const remote = (row && row.data) || {};
       const merged = Object.assign({}, remote, state);
       for (const k of lastKnownKeys) { if (!currentKeys.has(k)) delete merged[k]; }
 
       if (!row) {
-        const { error } = await sb.from('app_state').insert({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() });
+        const { error } = await sb.from('app_state').insert({ key: APP_KEY, user_id: window.pcUserId, data: merged, updated_at: new Date().toISOString() });
         if (!error) { lastSyncedJson = json; lastKnownKeys = new Set(Object.keys(merged)); return; }
         continue; // someone else created the row between our read and write — retry as an update
       }
       const { data: updated, error } = await sb.from('app_state')
         .update({ data: merged, updated_at: new Date().toISOString() })
-        .eq('key', APP_KEY).eq('updated_at', row.updated_at)
+        .eq('key', APP_KEY).eq('user_id', window.pcUserId).eq('updated_at', row.updated_at)
         .select();
       if (error) { console.error('Sync push error:', error); return; }
       if (updated && updated.length) { lastSyncedJson = json; lastKnownKeys = new Set(Object.keys(merged)); return; }
@@ -3308,14 +3292,14 @@ document.addEventListener('focusout', () => {
 });
 
 async function pullAndApply() {
-  const { data: row, error } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+  const { data: row, error } = await sb.from('app_state').select('data').eq('key', APP_KEY).eq('user_id', window.pcUserId).maybeSingle();
   if (error) { console.error('Sync pull error:', error); return; }
   if (!row || !row.data || Object.keys(row.data).length === 0) {
     const local = snapshotSyncedState();
     if (Object.keys(local).length > 0) {
       lastSyncedJson = JSON.stringify(local);
       lastKnownKeys = new Set(Object.keys(local));
-      await sb.from('app_state').upsert({ key: APP_KEY, data: local, updated_at: new Date().toISOString() });
+      await sb.from('app_state').upsert({ key: APP_KEY, user_id: window.pcUserId, data: local, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' });
     }
     return;
   }
@@ -3348,8 +3332,10 @@ function flushSync() {
   try {
     // Merge onto current remote data (same reasoning as pushNow) so a
     // backgrounded/closing tab can't clobber keys it doesn't know about.
-    fetch(`${SUPABASE_URL}/rest/v1/app_state?key=eq.${APP_KEY}&select=data`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+    // Raw fetch (not sb.from) doesn't get the automatic JWT swap, so the
+    // access token is attached by hand and user_id filtered explicitly.
+    fetch(`${window.SUPABASE_URL}/rest/v1/app_state?key=eq.${APP_KEY}&user_id=eq.${window.pcUserId}&select=data`, {
+      headers: { 'apikey': window.SUPABASE_KEY, 'Authorization': 'Bearer ' + window.pcAccessToken },
       keepalive: true
     })
       .then(r => r.json())
@@ -3358,16 +3344,16 @@ function flushSync() {
         const remote = (rows && rows[0] && rows[0].data) || {};
         const merged = Object.assign({}, remote, state);
         for (const k of lastKnownKeys) { if (!currentKeys.has(k)) delete merged[k]; }
-        return fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+        return fetch(`${window.SUPABASE_URL}/rest/v1/app_state?on_conflict=user_id,key`, {
           method: 'POST',
           keepalive: true,
           headers: {
             'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'apikey': window.SUPABASE_KEY,
+            'Authorization': 'Bearer ' + window.pcAccessToken,
             'Prefer': 'resolution=merge-duplicates'
           },
-          body: JSON.stringify({ key: APP_KEY, data: merged, updated_at: new Date().toISOString() })
+          body: JSON.stringify({ key: APP_KEY, user_id: window.pcUserId, data: merged, updated_at: new Date().toISOString() })
         });
       })
       .catch(() => {});
@@ -3390,6 +3376,7 @@ function renderGreeting() {
 }
 
 (async () => {
+  await window.pcAuthGate();
   renderGreeting();
   await pullAndApply();
   subscribeRealtime();

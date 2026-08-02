@@ -339,12 +339,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="shared-auth.js"></script>
 <script>
-const ANTHROPIC_API_KEY = '';
-const GROQ_API_KEY = '';
-const SUPABASE_URL = 'https://mxgrrjyoosiywksxzlje.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_K1-mePuh2s7ECxxUdUZtqQ_KY3brvIL';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ─── SUPABASE (client + auth owned by shared-auth.js) ────────────────────────
+const sb = window.sb;
 const APP_KEY = 'po-coach';
 
 // ─── DATES (same 6 AM day-boundary logic as the dashboard) ──────────────────
@@ -394,7 +392,7 @@ function applyDashboardContext(state) {
 
 async function loadContext() {
   try {
-    const { data: row, error } = await sb.from('app_state').select('data').eq('key', 'dashboard').maybeSingle();
+    const { data: row, error } = await sb.from('app_state').select('data').eq('key', 'dashboard').eq('user_id', window.pcUserId).maybeSingle();
     if (error) throw error;
     applyDashboardContext(row && row.data);
   } catch (e) {
@@ -471,13 +469,11 @@ function showStatus(msg, isError) {
 }
 
 async function callClaude() {
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('/api/anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Authorization': 'Bearer ' + window.pcAccessToken
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
@@ -523,7 +519,7 @@ async function logNutritionEntry(entry) {
   const nutritionKey = 'nutrition:' + date;
   try {
     for (let attempt = 0; attempt < 5; attempt++) {
-      const { data: row, error: readErr } = await sb.from('app_state').select('data, updated_at').eq('key', 'dashboard').maybeSingle();
+      const { data: row, error: readErr } = await sb.from('app_state').select('data, updated_at').eq('key', 'dashboard').eq('user_id', window.pcUserId).maybeSingle();
       if (readErr) throw readErr;
       const remoteData = Object.assign({}, (row && row.data) || {});
       const existing = remoteData[nutritionKey] ? JSON.parse(remoteData[nutritionKey]) : [];
@@ -531,13 +527,13 @@ async function logNutritionEntry(entry) {
       remoteData[nutritionKey] = JSON.stringify(existing);
 
       if (!row) {
-        const { error } = await sb.from('app_state').insert({ key: 'dashboard', data: remoteData, updated_at: new Date().toISOString() });
+        const { error } = await sb.from('app_state').insert({ key: 'dashboard', user_id: window.pcUserId, data: remoteData, updated_at: new Date().toISOString() });
         if (!error) return;
         continue; // someone else created the row between our read and write — retry as an update
       }
       const { data: updated, error } = await sb.from('app_state')
         .update({ data: remoteData, updated_at: new Date().toISOString() })
-        .eq('key', 'dashboard').eq('updated_at', row.updated_at)
+        .eq('key', 'dashboard').eq('user_id', window.pcUserId).eq('updated_at', row.updated_at)
         .select();
       if (error) throw error;
       if (updated && updated.length) return;
@@ -563,7 +559,6 @@ function mostRecentSundayMidnight(d) {
 }
 
 async function maybeGenerateWeeklyRecap() {
-  if (!ANTHROPIC_API_KEY) return;
   const now = new Date();
   const sunday = mostRecentSundayMidnight(now);
   const boundary = new Date(sunday);
@@ -616,13 +611,11 @@ async function maybeGenerateWeeklyRecap() {
 - Habits completed: ${habitDone}/${habitTotal} (across all habits, all 7 days).
 - Current daily-goal streak: ${streak} days.`;
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/anthropic', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Authorization': 'Bearer ' + window.pcAccessToken
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
@@ -649,11 +642,6 @@ async function sendMessage() {
   const sendBtn = document.getElementById('chatSendBtn');
   const text = input.value.trim();
   if (!text) return;
-
-  if (!ANTHROPIC_API_KEY) {
-    showStatus('Coach needs an Anthropic API key — set ANTHROPIC_API_KEY at the top of po-coach.html.', true);
-    return;
-  }
 
   messages.push({ role: 'user', content: text });
   renderMessages();
@@ -720,10 +708,6 @@ async function toggleRecording() {
     mediaRecorder.stop();
     return;
   }
-  if (!GROQ_API_KEY) {
-    showStatus('Voice input needs a Groq API key — set GROQ_API_KEY at the top of po-coach.html.', true);
-    return;
-  }
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (e) {
@@ -757,9 +741,9 @@ async function transcribeAndFill(blob) {
     form.append('model', 'whisper-large-v3-turbo');
     form.append('language', 'tr');
     form.append('response_format', 'json');
-    const resp = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    const resp = await fetch('/api/transcribe', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + GROQ_API_KEY },
+      headers: { 'Authorization': 'Bearer ' + window.pcAccessToken },
       body: form
     });
     if (!resp.ok) throw new Error('Transcription API error ' + resp.status);
@@ -840,7 +824,7 @@ async function pushNow() {
   lastSyncedJson = json;
   try {
     const { error } = await sb.from('app_state')
-      .upsert({ key: APP_KEY, data: state, updated_at: new Date().toISOString() });
+      .upsert({ key: APP_KEY, user_id: window.pcUserId, data: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' });
     if (error) console.error('Sync push error:', error);
   } catch (e) { console.error('Sync push failed:', e); }
 }
@@ -870,13 +854,13 @@ document.addEventListener('focusout', () => {
 });
 
 async function pullAndApply() {
-  const { data: row, error } = await sb.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+  const { data: row, error } = await sb.from('app_state').select('data').eq('key', APP_KEY).eq('user_id', window.pcUserId).maybeSingle();
   if (error) { console.error('Sync pull error:', error); return; }
   if (!row || !row.data || Object.keys(row.data).length === 0) {
     const local = snapshotSyncedState();
     if (Object.keys(local).length > 0) {
       lastSyncedJson = JSON.stringify(local);
-      await sb.from('app_state').upsert({ key: APP_KEY, data: local, updated_at: new Date().toISOString() });
+      await sb.from('app_state').upsert({ key: APP_KEY, user_id: window.pcUserId, data: local, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' });
     }
     return;
   }
@@ -906,16 +890,16 @@ function flushSync() {
   if (json === lastSyncedJson) return;
   lastSyncedJson = json;
   try {
-    fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+    fetch(`${window.SUPABASE_URL}/rest/v1/app_state?on_conflict=user_id,key`, {
       method: 'POST',
       keepalive: true,
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'apikey': window.SUPABASE_KEY,
+        'Authorization': 'Bearer ' + window.pcAccessToken,
         'Prefer': 'resolution=merge-duplicates'
       },
-      body: JSON.stringify({ key: APP_KEY, data: state, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ key: APP_KEY, user_id: window.pcUserId, data: state, updated_at: new Date().toISOString() })
     });
   } catch (e) { console.error('Sync flush failed:', e); }
 }
@@ -926,6 +910,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 (async () => {
+  await window.pcAuthGate();
   await loadContext();
   subscribeDashboardContext();
   await pullAndApply();
